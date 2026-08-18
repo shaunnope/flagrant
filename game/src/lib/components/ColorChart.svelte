@@ -1,17 +1,31 @@
 <script lang="ts">
 	import { PieChart, BarChart } from 'layerchart';
 	import type { FlagColor } from '../types';
+	import { hexToHsl } from '../similarity';
 
 	let { colors }: { colors: FlagColor[] } = $props();
 
 	let mode = $state<'pie' | 'bar'>('pie');
 
-	// Sorted desc so the bar chart reads largest-to-smallest, and so the
-	// pie's identity colour mapping below stays stable regardless of the
-	// order colours were extracted in.
-	let data = $derived(
-		[...colors].sort((a, b) => b.pct - a.pct).map((c) => ({ hex: c.hex, pct: Math.round(c.pct * 10) / 10 }))
+	function toPoint(c: FlagColor) {
+		return { hex: c.hex, pct: Math.round(c.pct * 10) / 10 };
+	}
+
+	// Bar chart reads largest-to-smallest.
+	let barData = $derived([...colors].sort((a, b) => b.pct - a.pct).map(toPoint));
+	// Pie chart is sorted by hue (perceptual order around the colour wheel)
+	// rather than prevalence, so adjacent wedges look related instead of
+	// jumping between unrelated hues.
+	let pieData = $derived(
+		[...colors]
+			.sort((a, b) => {
+				const ha = hexToHsl(a.hex);
+				const hb = hexToHsl(b.hex);
+				return ha.h - hb.h || ha.l - hb.l;
+			})
+			.map(toPoint)
 	);
+	let data = $derived(mode === 'pie' ? pieData : barData);
 	let hexDomain = $derived(data.map((d) => d.hex));
 </script>
 
@@ -23,7 +37,16 @@
 
 	<div class="chart-area">
 		{#if mode === 'pie'}
-			<PieChart {data} key="hex" value="pct" c="hex" cDomain={hexDomain} cRange={hexDomain} label="hex" />
+			<PieChart
+				{data}
+				key="hex"
+				value="pct"
+				c="hex"
+				cDomain={hexDomain}
+				cRange={hexDomain}
+				label="hex"
+				props={{ pie: { sort: null } }}
+			/>
 		{:else}
 			<BarChart {data} x="hex" y="pct" c="hex" cDomain={hexDomain} cRange={hexDomain} />
 		{/if}

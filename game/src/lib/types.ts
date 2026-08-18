@@ -27,3 +27,8 @@ export interface Guess {
 	similarity: number;
 	correct: boolean;
 }
+
+/** flagcdn.com PNG URL for a country's flag, by cca2 code. */
+export function flagUrl(cca2: string, width = 320): string {
+	return `https://flagcdn.com/w${width}/${cca2.toLowerCase()}.png`;
+}

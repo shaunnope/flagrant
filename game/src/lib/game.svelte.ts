@@ -3,6 +3,7 @@ import { HINT_ORDER } from './types';
 import { colorSimilarity } from './similarity';
 
 const MAX_HINTS = 4;
+const FLASH_MS = 1500;
 
 class GameState {
 	countries = $state<Country[]>([]);
@@ -14,6 +15,10 @@ class GameState {
 	hintsRevealed = $state(0);
 	won = $state(false);
 	gaveUp = $state(false);
+
+	/** Briefly shows the flag of whatever was just guessed. */
+	flashCountry = $state<Country | null>(null);
+	private flashTimer: ReturnType<typeof setTimeout> | undefined;
 
 	/** Hints unlock one per wrong guess, capped at MAX_HINTS. */
 	revealedHints = $derived<HintKind[]>(HINT_ORDER.slice(0, this.hintsRevealed));
@@ -43,6 +48,8 @@ class GameState {
 		this.hintsRevealed = 0;
 		this.won = false;
 		this.gaveUp = false;
+		clearTimeout(this.flashTimer);
+		this.flashCountry = null;
 	}
 
 	guess(country: Country) {
@@ -51,6 +58,12 @@ class GameState {
 		const correct = country.cca3 === this.target.cca3;
 		const similarity = correct ? 100 : colorSimilarity(country.colors, this.target.colors);
 		this.guesses = [{ country, similarity, correct }, ...this.guesses];
+
+		clearTimeout(this.flashTimer);
+		this.flashCountry = country;
+		if (!correct) {
+			this.flashTimer = setTimeout(() => (this.flashCountry = null), FLASH_MS);
+		}
 
 		if (correct) {
 			this.won = true;

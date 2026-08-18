@@ -9,6 +9,12 @@
 		{#each guesses as g (g.country.cca3 + g.similarity)}
 			<li class:correct={g.correct}>
 				<span class="name">{g.country.name}</span>
+				<span class="colors">
+					{#each [...g.country.colors].sort((a, b) => b.pct - a.pct) as c (c.hex)}
+						<span class="color-seg" style="width: {c.pct}%; background: {c.hex}" title="{c.hex} {Math.round(c.pct)}%"
+						></span>
+					{/each}
+				</span>
 				<span class="bar-track">
 					<span class="bar-fill" style="width: {g.similarity}%"></span>
 				</span>
@@ -30,7 +36,7 @@
 	}
 	li {
 		display: grid;
-		grid-template-columns: 9rem 1fr 3rem;
+		grid-template-columns: 9rem 5rem 1fr 3rem;
 		align-items: center;
 		gap: 0.6rem;
 		font-size: 0.9rem;
@@ -39,6 +45,16 @@
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+	}
+	.colors {
+		display: flex;
+		height: 0.6rem;
+		border-radius: 999px;
+		overflow: hidden;
+		border: 1px solid var(--border);
+	}
+	.color-seg {
+		height: 100%;
 	}
 	.bar-track {
 		height: 0.5rem;

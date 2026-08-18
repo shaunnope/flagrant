@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { game } from './lib/game.svelte';
+	import { flagUrl } from './lib/types';
 	import ColorChart from './lib/components/ColorChart.svelte';
 	import SearchInput from './lib/components/SearchInput.svelte';
 	import GuessList from './lib/components/GuessList.svelte';
@@ -24,17 +25,18 @@
 	{:else if game.target}
 		<section class="chart-section">
 			<ColorChart colors={game.target.colors} />
+			{#if game.flashCountry && !game.over}
+				<img class="flash-flag" src={flagUrl(game.flashCountry.cca2)} alt={game.flashCountry.name} />
+			{/if}
 		</section>
 
 		<section class="hint-section">
 			<HintPanel target={game.target} revealed={game.revealedHints} neighborName={(c) => game.neighborName(c)} />
-			{#if game.hintsRevealed < 4 && !game.over}
-				<p class="hint-progress">{4 - game.hintsRevealed} more wrong guess(es) until the next hint.</p>
-			{/if}
 		</section>
 
 		{#if game.over}
 			<section class="result">
+				<img class="reveal-flag" src={flagUrl(game.target.cca2)} alt={game.target.name} />
 				{#if game.won}
 					<p class="win">🎉 It was {game.target.name}!</p>
 				{:else}
@@ -50,9 +52,9 @@
 					{alreadyGuessed}
 					onSelect={(c) => game.guess(c)}
 				/>
-				{#if game.unlimitedGuesses}
+				<div class="input-actions">
 					<button class="secondary" onclick={() => game.giveUp()}>Give up</button>
-				{/if}
+				</div>
 			</section>
 		{/if}
 
@@ -84,7 +86,23 @@
 	}
 	.chart-section {
 		display: flex;
-		justify-content: center;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.75rem;
+	}
+	.flash-flag {
+		width: 8rem;
+		height: auto;
+		border-radius: 0.35rem;
+		border: 1px solid var(--border);
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+	}
+	.reveal-flag {
+		width: 10rem;
+		height: auto;
+		border-radius: 0.4rem;
+		border: 1px solid var(--border);
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 	}
 	.hint-section {
 		display: flex;
@@ -92,16 +110,15 @@
 		gap: 0.4rem;
 		align-items: center;
 	}
-	.hint-progress {
-		font-size: 0.8rem;
-		opacity: 0.6;
-		margin: 0;
-	}
 	.input-section {
 		display: flex;
 		flex-direction: column;
 		gap: 0.6rem;
 		align-items: center;
+	}
+	.input-actions {
+		display: flex;
+		gap: 0.6rem;
 	}
 	.result {
 		display: flex;
