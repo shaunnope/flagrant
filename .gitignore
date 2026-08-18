@@ -1,0 +1,9 @@
+/target/
+**/target/
+
+# secrets
+.env
+.env.*
+
+# large generated flag image cache (re-downloadable via dataset-gen)
+dataset-gen/data/flags/

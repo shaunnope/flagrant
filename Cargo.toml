@@ -1,0 +1,3 @@
+[workspace]
+members = ["dataset-gen"]
+resolver = "2"
