@@ -331,7 +331,7 @@ fn dominant_colors(img: &image::RgbaImage, palette: &[(u8, u8, u8)]) -> Vec<Flag
     kept.into_iter()
         .map(|((r, g, b), p)| FlagColor {
             hex: to_hex(r, g, b),
-            pct: (p / kept_total) * 100.0,
+            pct: ((p / kept_total) * 100_000.0).round() / 1000.0,
         })
         .collect()
 }
