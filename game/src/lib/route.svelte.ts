@@ -1,7 +1,15 @@
-export type Route = 'game' | 'all';
+export type Route = 'game' | 'all' | 'help' | 'about';
+
+const HASHES: Record<Exclude<Route, 'game'>, string> = {
+	all: '#/all',
+	help: '#/help',
+	about: '#/about'
+};
 
 function parseRoute(): Route {
-	return typeof window !== 'undefined' && window.location.hash === '#/all' ? 'all' : 'game';
+	if (typeof window === 'undefined') return 'game';
+	const hash = window.location.hash;
+	return (Object.keys(HASHES) as Exclude<Route, 'game'>[]).find((r) => HASHES[r] === hash) ?? 'game';
 }
 
 /** Tiny hash-based router — hash-only so it needs no server-side rewrite on GitHub Pages. */
@@ -16,7 +24,7 @@ class RouteStore {
 	}
 
 	go(route: Route) {
-		window.location.hash = route === 'all' ? '#/all' : '';
+		window.location.hash = route === 'game' ? '' : HASHES[route];
 	}
 }
 

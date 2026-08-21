@@ -11,6 +11,8 @@
 	import HintPanel from './lib/components/HintPanel.svelte';
 	import AllList from './lib/components/AllList.svelte';
 	import CountryModal from './lib/components/CountryModal.svelte';
+	import HelpPage from './lib/components/HelpPage.svelte';
+	import AboutPage from './lib/components/AboutPage.svelte';
 
 	onMount(() => game.init());
 
@@ -20,37 +22,48 @@
 
 <main>
 	<header>
-		<button
-			class="theme-toggle"
-			title={theme.resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-			aria-label={theme.resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-			onclick={() => theme.toggle()}
-		>
-			{#if theme.resolved === 'dark'}
-				<!-- currently dark: show the unset option, light -->
-				<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<circle cx="12" cy="12" r="4" />
-					<path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-				</svg>
-			{:else}
-				<!-- currently light: show the unset option, dark -->
-				<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
-				</svg>
-			{/if}
-		</button>
+		<div class="header-bar">
+			<nav class="nav">
+				{#if route.current === 'game'}
+					<a href="#/all">All flags</a>
+					<a href="#/help">Help</a>
+					<a href="#/about">About</a>
+				{:else}
+					<button type="button" class="link-btn" onclick={() => route.go('game')}>← Game</button>
+					{#if route.current !== 'all'}<a href="#/all">All flags</a>{/if}
+					{#if route.current !== 'help'}<a href="#/help">Help</a>{/if}
+					{#if route.current !== 'about'}<a href="#/about">About</a>{/if}
+				{/if}
+			</nav>
+			<button
+				class="theme-toggle"
+				title={theme.resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+				aria-label={theme.resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+				onclick={() => theme.toggle()}
+			>
+				{#if theme.resolved === 'dark'}
+					<!-- currently dark: show the unset option, light -->
+					<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="12" cy="12" r="4" />
+						<path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+					</svg>
+				{:else}
+					<!-- currently light: show the unset option, dark -->
+					<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
+					</svg>
+				{/if}
+			</button>
+		</div>
 		<h1>Convexity</h1>
 		<p class="tagline">Guess the flag from its colour distribution.</p>
-		<nav class="subnav">
-			{#if route.current === 'all'}
-				<button type="button" class="link-btn" onclick={() => route.go('game')}>← Back to game</button>
-			{:else}
-				<a href="#/all">All flags</a>
-			{/if}
-		</nav>
 	</header>
 
-	{#if game.loading}
+	{#if route.current === 'help'}
+		<HelpPage />
+	{:else if route.current === 'about'}
+		<AboutPage />
+	{:else if game.loading}
 		<p>Loading flags…</p>
 	{:else if game.error}
 		<p class="error">Failed to load dataset: {game.error}</p>
@@ -112,12 +125,35 @@
 	}
 	header {
 		text-align: center;
-		position: relative;
+	}
+	.header-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+	}
+	.nav {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+	.nav a,
+	.link-btn {
+		font-size: 0.85rem;
+		color: var(--accent);
+		text-decoration: none;
+	}
+	.link-btn {
+		padding: 0;
+		border: none;
+		background: transparent;
+		cursor: pointer;
+	}
+	.nav a:hover,
+	.link-btn:hover {
+		text-decoration: underline;
 	}
 	.theme-toggle {
-		position: absolute;
-		top: 0;
-		right: 0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -129,40 +165,19 @@
 		background: transparent;
 		color: inherit;
 		cursor: pointer;
+		flex-shrink: 0;
 	}
 	.theme-toggle:hover {
 		background: var(--accent-muted);
 		border-color: var(--accent);
 	}
 	h1 {
-		margin: 0 0 0.25rem;
+		margin: 1rem 0 0.25rem;
 		font-size: 2rem;
 	}
 	.tagline {
 		margin: 0;
 		opacity: 0.7;
-	}
-	.subnav {
-		margin-top: 0.5rem;
-	}
-	.subnav a {
-		font-size: 0.85rem;
-		color: var(--accent);
-		text-decoration: none;
-	}
-	.subnav a:hover {
-		text-decoration: underline;
-	}
-	.link-btn {
-		padding: 0;
-		border: none;
-		background: transparent;
-		font-size: 0.85rem;
-		color: var(--accent);
-		cursor: pointer;
-	}
-	.link-btn:hover {
-		text-decoration: underline;
 	}
 	.chart-section {
 		display: flex;
