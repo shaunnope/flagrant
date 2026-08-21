@@ -50,16 +50,24 @@
 
 	<div class="chart-area">
 		{#if mode === 'pie'}
-			<PieChart
-				{data}
-				key="hex"
-				value="pct"
-				c="hex"
-				cDomain={hexDomain}
-				cRange={hexDomain}
-				label="hex"
-				props={{ pie: { sort: null } }}
-			/>
+			<!-- Ring drawn separately from the wedges: an Arc stroke would also
+			     outline every sector divider, which we don't want — only the
+			     pie's circumference should get a border. Sized/centred to match
+			     PieChart's own default fit (a square of side min(width,height),
+			     centred in the container). -->
+			<div class="pie-ring-wrap">
+				<div class="pie-ring"></div>
+				<PieChart
+					{data}
+					key="hex"
+					value="pct"
+					c="hex"
+					cDomain={hexDomain}
+					cRange={hexDomain}
+					label="hex"
+					props={{ pie: { sort: null } }}
+				/>
+			</div>
 		{:else}
 			<!-- <div class="bar-options">
 				<label>
@@ -112,6 +120,25 @@
 	.chart-area {
 		width: 100%;
 		height: 320px;
+	}
+	.pie-ring-wrap {
+		position: relative;
+		width: 100%;
+		height: 100%;
+	}
+	.pie-ring {
+		position: absolute;
+		inset: 0;
+		margin: auto;
+		height: 102%;
+		width: auto;
+		aspect-ratio: 1;
+		border-radius: 50%;
+		/* Inverse of --fg/--bg so the ring reads as a light border in dark
+		   mode and a dark border in light mode. */
+		border: 5px solid var(--fg);
+		opacity: 0.35;
+		pointer-events: none;
 	}
 	.bar-options {
 		display: flex;
