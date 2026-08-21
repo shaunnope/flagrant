@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { game } from './lib/game.svelte';
 	import { flagUrl } from './lib/types';
+	import { theme } from './lib/theme.svelte';
 	import ColorChart from './lib/components/ColorChart.svelte';
 	import SearchInput from './lib/components/SearchInput.svelte';
 	import GuessList from './lib/components/GuessList.svelte';
@@ -14,6 +15,25 @@
 
 <main>
 	<header>
+		<button
+			class="theme-toggle"
+			title={theme.resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+			aria-label={theme.resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+			onclick={() => theme.toggle()}
+		>
+			{#if theme.resolved === 'dark'}
+				<!-- currently dark: show the unset option, light -->
+				<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="12" cy="12" r="4" />
+					<path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+				</svg>
+			{:else}
+				<!-- currently light: show the unset option, dark -->
+				<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
+				</svg>
+			{/if}
+		</button>
 		<h1>Convexity</h1>
 		<p class="tagline">Guess the flag from its colour distribution.</p>
 	</header>
@@ -75,6 +95,27 @@
 	}
 	header {
 		text-align: center;
+		position: relative;
+	}
+	.theme-toggle {
+		position: absolute;
+		top: 0;
+		right: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.2rem;
+		height: 2.2rem;
+		padding: 0;
+		border-radius: 999px;
+		border: 1px solid var(--border);
+		background: transparent;
+		color: inherit;
+		cursor: pointer;
+	}
+	.theme-toggle:hover {
+		background: var(--accent-muted);
+		border-color: var(--accent);
 	}
 	h1 {
 		margin: 0 0 0.25rem;
