@@ -35,6 +35,9 @@ class GameState {
 			// PNGs) to make a fair puzzle; require at least one real colour.
 			this.countries = data.filter((c) => c.colors.length > 0);
 			this.loading = false;
+
+			const code = new URLSearchParams(window.location.search).get('country');
+			if (code && this.setRoundByCode(code)) return;
 			this.newRound();
 		} catch (e) {
 			this.error = e instanceof Error ? e.message : String(e);
@@ -43,7 +46,21 @@ class GameState {
 	}
 
 	newRound() {
-		this.target = this.countries[Math.floor(Math.random() * this.countries.length)];
+		this.startRound(this.countries[Math.floor(Math.random() * this.countries.length)]);
+	}
+
+	/** Sets the target to the country matching the given cca2/cca3 code (case-insensitive). */
+	setRoundByCode(code: string): boolean {
+		const target = this.countries.find(
+			(c) => c.cca2.toLowerCase() === code.toLowerCase() || c.cca3.toLowerCase() === code.toLowerCase()
+		);
+		if (!target) return false;
+		this.startRound(target);
+		return true;
+	}
+
+	private startRound(target: Country) {
+		this.target = target;
 		this.guesses = [];
 		this.hintsRevealed = 0;
 		this.won = false;

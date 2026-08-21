@@ -1,16 +1,21 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { game } from './lib/game.svelte';
+	import { route } from './lib/route.svelte';
 	import { flagUrl } from './lib/types';
+	import type { Country } from './lib/types';
 	import { theme } from './lib/theme.svelte';
 	import ColorChart from './lib/components/ColorChart.svelte';
 	import SearchInput from './lib/components/SearchInput.svelte';
 	import GuessList from './lib/components/GuessList.svelte';
 	import HintPanel from './lib/components/HintPanel.svelte';
+	import AllList from './lib/components/AllList.svelte';
+	import CountryModal from './lib/components/CountryModal.svelte';
 
 	onMount(() => game.init());
 
 	let alreadyGuessed = $derived(new Set(game.guesses.map((g) => g.country.cca3)));
+	let selected = $state<Country | null>(null);
 </script>
 
 <main>
@@ -36,12 +41,24 @@
 		</button>
 		<h1>Convexity</h1>
 		<p class="tagline">Guess the flag from its colour distribution.</p>
+		<nav class="subnav">
+			{#if route.current === 'all'}
+				<button type="button" class="link-btn" onclick={() => route.go('game')}>← Back to game</button>
+			{:else}
+				<a href="#/all">All flags</a>
+			{/if}
+		</nav>
 	</header>
 
 	{#if game.loading}
 		<p>Loading flags…</p>
 	{:else if game.error}
 		<p class="error">Failed to load dataset: {game.error}</p>
+	{:else if route.current === 'all'}
+		<AllList countries={game.countries} onSelect={(c) => (selected = c)} />
+		{#if selected}
+			<CountryModal country={selected} onClose={() => (selected = null)} />
+		{/if}
 	{:else if game.target}
 		<section class="chart-section">
 			<ColorChart colors={game.target.colors} />
@@ -124,6 +141,28 @@
 	.tagline {
 		margin: 0;
 		opacity: 0.7;
+	}
+	.subnav {
+		margin-top: 0.5rem;
+	}
+	.subnav a {
+		font-size: 0.85rem;
+		color: var(--accent);
+		text-decoration: none;
+	}
+	.subnav a:hover {
+		text-decoration: underline;
+	}
+	.link-btn {
+		padding: 0;
+		border: none;
+		background: transparent;
+		font-size: 0.85rem;
+		color: var(--accent);
+		cursor: pointer;
+	}
+	.link-btn:hover {
+		text-decoration: underline;
 	}
 	.chart-section {
 		display: flex;
