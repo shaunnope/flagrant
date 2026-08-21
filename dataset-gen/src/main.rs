@@ -105,18 +105,39 @@ fn main() -> Result<()> {
         }
     }
 
-    let json = serde_json::to_string_pretty(&entries)?;
-    fs::write(&out_path, json)?;
+    let min_path = write_json_pair(&out_path, &entries)?;
 
     println!(
-        "\nWrote {} flags to {} ({} failed: {:?})",
+        "\nWrote {} flags to {} + {} ({} failed: {:?})",
         entries.len(),
         out_path.display(),
+        min_path.display(),
         failures.len(),
         failures
     );
 
     Ok(())
+}
+
+/// Writes `path` as pretty-printed JSON and a sibling `.min.json` as
+/// minified JSON (no whitespace) — the pretty file is for diffing/review,
+/// the minified one is the smaller payload the game actually fetches.
+/// Returns the minified file's path.
+fn write_json_pair(path: &Path, value: &impl Serialize) -> Result<PathBuf> {
+    let pretty = serde_json::to_string_pretty(value)?;
+    fs::write(path, pretty)?;
+
+    let min_path = minified_path(path);
+    let minified = serde_json::to_string(value)?;
+    fs::write(&min_path, minified)?;
+
+    Ok(min_path)
+}
+
+/// `foo/flags.json` -> `foo/flags.min.json`.
+fn minified_path(path: &Path) -> PathBuf {
+    let stem = path.file_stem().unwrap_or_default().to_string_lossy();
+    path.with_file_name(format!("{stem}.min.json"))
 }
 
 fn process_country(
@@ -310,7 +331,7 @@ fn dominant_colors(img: &image::RgbaImage, palette: &[(u8, u8, u8)]) -> Vec<Flag
     kept.into_iter()
         .map(|((r, g, b), p)| FlagColor {
             hex: to_hex(r, g, b),
-            pct: (p / kept_total) * 100.0,
+            pct: ((p / kept_total) * 100_000.0).round() / 1000.0,
         })
         .collect()
 }

@@ -28,7 +28,7 @@ class GameState {
 
 	async init() {
 		try {
-			const res = await fetch(`${import.meta.env.BASE_URL}flags.json`);
+			const res = await fetch(`${import.meta.env.BASE_URL}flags.min.json`);
 			if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
 			const data: Country[] = await res.json();
 			// A handful of countries ship with too few decoded pixels (near-blank
