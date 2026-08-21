@@ -1,7 +1,7 @@
 import type { FlagColor } from './types';
 
 /** Coarse hue buckets colours are classified into before comparing distributions. */
-const BUCKETS = [
+export const BUCKETS = [
 	'black',
 	'white',
 	'gray',
@@ -14,7 +14,7 @@ const BUCKETS = [
 	'purple',
 	'pink'
 ] as const;
-type Bucket = (typeof BUCKETS)[number];
+export type Bucket = (typeof BUCKETS)[number];
 
 export function hexToHsl(hex: string): { h: number; s: number; l: number } {
 	const r = parseInt(hex.slice(1, 3), 16) / 255;

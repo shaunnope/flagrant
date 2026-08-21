@@ -1,27 +1,77 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { game } from './lib/game.svelte';
+	import { route } from './lib/route.svelte';
 	import { flagUrl } from './lib/types';
+	import type { Country } from './lib/types';
+	import { theme } from './lib/theme.svelte';
 	import ColorChart from './lib/components/ColorChart.svelte';
 	import SearchInput from './lib/components/SearchInput.svelte';
 	import GuessList from './lib/components/GuessList.svelte';
 	import HintPanel from './lib/components/HintPanel.svelte';
+	import AllList from './lib/components/AllList.svelte';
+	import CountryModal from './lib/components/CountryModal.svelte';
+	import HelpPage from './lib/components/HelpPage.svelte';
+	import AboutPage from './lib/components/AboutPage.svelte';
 
 	onMount(() => game.init());
 
 	let alreadyGuessed = $derived(new Set(game.guesses.map((g) => g.country.cca3)));
+	let selected = $state<Country | null>(null);
 </script>
 
 <main>
 	<header>
+		<div class="header-bar">
+			<nav class="nav">
+				{#if route.current === 'game'}
+					<a href="#/all">All flags</a>
+					<a href="#/help">Help</a>
+					<a href="#/about">About</a>
+				{:else}
+					<button type="button" class="link-btn" onclick={() => route.go('game')}>← Game</button>
+					{#if route.current !== 'all'}<a href="#/all">All flags</a>{/if}
+					{#if route.current !== 'help'}<a href="#/help">Help</a>{/if}
+					{#if route.current !== 'about'}<a href="#/about">About</a>{/if}
+				{/if}
+			</nav>
+			<button
+				class="theme-toggle"
+				title={theme.resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+				aria-label={theme.resolved === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+				onclick={() => theme.toggle()}
+			>
+				{#if theme.resolved === 'dark'}
+					<!-- currently dark: show the unset option, light -->
+					<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="12" cy="12" r="4" />
+						<path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+					</svg>
+				{:else}
+					<!-- currently light: show the unset option, dark -->
+					<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
+					</svg>
+				{/if}
+			</button>
+		</div>
 		<h1>Convexity</h1>
 		<p class="tagline">Guess the flag from its colour distribution.</p>
 	</header>
 
-	{#if game.loading}
+	{#if route.current === 'help'}
+		<HelpPage />
+	{:else if route.current === 'about'}
+		<AboutPage />
+	{:else if game.loading}
 		<p>Loading flags…</p>
 	{:else if game.error}
 		<p class="error">Failed to load dataset: {game.error}</p>
+	{:else if route.current === 'all'}
+		<AllList countries={game.countries} onSelect={(c) => (selected = c)} />
+		{#if selected}
+			<CountryModal country={selected} onClose={() => (selected = null)} />
+		{/if}
 	{:else if game.target}
 		<section class="chart-section">
 			<ColorChart colors={game.target.colors} />
@@ -76,8 +126,53 @@
 	header {
 		text-align: center;
 	}
+	.header-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+	}
+	.nav {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+	.nav a,
+	.link-btn {
+		font-size: 0.85rem;
+		color: var(--accent);
+		text-decoration: none;
+	}
+	.link-btn {
+		padding: 0;
+		border: none;
+		background: transparent;
+		cursor: pointer;
+	}
+	.nav a:hover,
+	.link-btn:hover {
+		text-decoration: underline;
+	}
+	.theme-toggle {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 2.2rem;
+		height: 2.2rem;
+		padding: 0;
+		border-radius: 999px;
+		border: 1px solid var(--border);
+		background: transparent;
+		color: inherit;
+		cursor: pointer;
+		flex-shrink: 0;
+	}
+	.theme-toggle:hover {
+		background: var(--accent-muted);
+		border-color: var(--accent);
+	}
 	h1 {
-		margin: 0 0 0.25rem;
+		margin: 1rem 0 0.25rem;
 		font-size: 2rem;
 	}
 	.tagline {
