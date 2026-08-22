@@ -7,3 +7,5 @@
 
 # large generated flag image cache (re-downloadable via dataset-gen)
 dataset-gen/data/flags/
+
+.claude/skills
