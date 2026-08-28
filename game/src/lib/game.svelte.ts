@@ -26,6 +26,11 @@ class GameState {
 	unlimitedGuesses = $derived(this.hintsRevealed >= MAX_HINTS);
 	over = $derived(this.won || this.gaveUp);
 
+	/**
+	 * Loads the flag dataset only — does not start a round. Callers (App.svelte)
+	 * decide whether to land on mode-select, resume a `?country=` Freeplay link,
+	 * or open a `?s=` shared session, once loading finishes.
+	 */
 	async init() {
 		try {
 			const res = await fetch(`${import.meta.env.BASE_URL}flags.min.json`);
@@ -35,10 +40,6 @@ class GameState {
 			// PNGs) to make a fair puzzle; require at least one real colour.
 			this.countries = data.filter((c) => c.colors.length > 0);
 			this.loading = false;
-
-			const code = new URLSearchParams(window.location.search).get('country');
-			if (code && this.setRoundByCode(code)) return;
-			this.newRound();
 		} catch (e) {
 			this.error = e instanceof Error ? e.message : String(e);
 			this.loading = false;

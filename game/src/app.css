@@ -1,13 +1,23 @@
 :root {
-	--bg: #ffffff;
+	--bg: #faf8f3;
 	--fg: #1a1a1a;
-	--surface: #f4f4f6;
+	--surface: #f1efe8;
 	--border: #dcdce2;
 	--accent: #3b5bdb;
 	--accent-muted: #e4e9fb;
 	--accent-contrast: #ffffff;
 	--success: #2ecc71;
 
+	/* layerchart's Axis falls back to `light-dark(white, black)` for tick-label
+	   stroke when these aren't set. light-dark() resolves off the *system*
+	   color-scheme, not our data-theme toggle, so it can pick the wrong (black)
+	   branch even in light mode. Pin both so the halo always matches our bg/fg. */
+	--color-surface-100: var(--bg);
+	--color-surface-content: var(--fg);
+
+	/* Also pins which branch light-dark() itself resolves to (used by
+	   layerchart's tooltip background/text) — without this it follows OS
+	   preference, not data-theme, and can mismatch our vars entirely. */
 	color-scheme: light dark;
 	font-family:
 		system-ui,
@@ -26,6 +36,9 @@
 		--accent: #6a8cff;
 		--accent-muted: #262c42;
 		--accent-contrast: #0c0e13;
+		--color-surface-100: var(--bg);
+		--color-surface-content: var(--fg);
+		color-scheme: dark;
 	}
 }
 
@@ -37,6 +50,13 @@
 	--accent: #6a8cff;
 	--accent-muted: #262c42;
 	--accent-contrast: #0c0e13;
+	--color-surface-100: var(--bg);
+	--color-surface-content: var(--fg);
+	color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+	color-scheme: light;
 }
 
 * {

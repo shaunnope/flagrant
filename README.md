@@ -109,11 +109,17 @@ npm run check     # type-check
 
 ## Notes on the dataset
 
-- Flag colours are extracted by quantizing pixels into a reduced colour
-  space (4 bits/channel), counting frequency, and keeping the top colours
-  covering ≥98% of the flag (max 8), normalized to sum to 100%.
+- Flags are sourced as SVGs and rasterized at a fixed width. Every declared 
+  fill/stroke colour in the SVG is collected as the flag's true palette, and 
+  each rendered pixel is snapped to its nearest palette entry — this eliminates 
+  anti-aliasing noise outright, since a rasterized edge pixel is only ever a 
+  blend *between* declared colours. Falls back to quantizing pixels into a reduced 
+  colour space (4 bits/channel) when an SVG has no solid colours to snap to (pure
+  gradients/patterns).
+- The top colours covering ≥99.95% of the flag (max 16) are kept and
+  normalized to sum to 100%.
 - Guess similarity buckets both flags' colours into 11 coarse hue groups
-  (red, orange, yellow, green, cyan, blue, purple, pink, black, white, gray)
+  (black, white, gray, red, orange, yellow, green, cyan, blue, purple, pink)
   and scores by total variation distance between the two coverage vectors —
   `100 × (1 − TVD)`. Identical distributions score 100; completely disjoint
   ones score 0.

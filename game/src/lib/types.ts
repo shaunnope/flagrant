@@ -32,3 +32,23 @@ export interface Guess {
 export function flagUrl(cca2: string, width = 320): string {
 	return `https://flagcdn.com/w${width}/${cca2.toLowerCase()}.png`;
 }
+
+/** Freeplay is the existing endless single-round mode; the other two are session-based. */
+export type GameMode = 'freeplay' | 'quickplay' | 'timed';
+
+export type QuickplayRounds = 5 | 10; // | 20 | 'all';
+export type TimedMinutes = 1 | 3 | 5;
+
+/** Player-chosen configuration for a session-based mode (freeplay has none). */
+export type SessionConfig =
+	| { mode: 'quickplay'; rounds: QuickplayRounds }
+	| { mode: 'timed'; minutes: TimedMinutes };
+
+export type RoundResult = 'solved-no-hints' | 'solved-with-hints' | 'unsolved';
+
+/** One resolved round within a session, kept for the results summary. */
+export interface RoundOutcome {
+	target: Country;
+	result: RoundResult;
+	hintsRevealed: number;
+}
