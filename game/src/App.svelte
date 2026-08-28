@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { game } from './lib/game.svelte';
+	import { session } from './lib/session.svelte';
 	import { route } from './lib/route.svelte';
 	import { flagUrl } from './lib/types';
-	import type { Country } from './lib/types';
+	import type { Country, GameMode, QuickplayRounds, TimedMinutes } from './lib/types';
+	import { decodeSession } from './lib/share';
 	import { theme } from './lib/theme.svelte';
 	import ColorChart from './lib/components/ColorChart.svelte';
 	import SearchInput from './lib/components/SearchInput.svelte';
@@ -13,8 +15,75 @@
 	import CountryModal from './lib/components/CountryModal.svelte';
 	import HelpPage from './lib/components/HelpPage.svelte';
 	import AboutPage from './lib/components/AboutPage.svelte';
+	import ModeSelect from './lib/components/ModeSelect.svelte';
+	import SessionProgress from './lib/components/SessionProgress.svelte';
+	import ResultsSummary from './lib/components/ResultsSummary.svelte';
 
 	onMount(() => game.init());
+
+	/** null = mode-selection screen is showing; no round/session active yet. */
+	let activeMode = $state<GameMode | null>(null);
+	let urlHandled = false;
+
+	// Once the dataset finishes loading, resolve the initial screen from the
+	// URL: a `?country=` link resumes Freeplay directly, a `?s=` link opens
+	// the shared session it encodes, otherwise land on mode-select.
+	$effect(() => {
+		if (urlHandled || game.loading || game.error) return;
+		urlHandled = true;
+
+		const params = new URLSearchParams(window.location.search);
+		const countryCode = params.get('country');
+		const shareParam = params.get('s');
+
+		if (shareParam) {
+			const decoded = decodeSession(shareParam, game.countries);
+			if (decoded) {
+				if (decoded.config.mode === 'quickplay') {
+					session.startQuickplay(game.countries, decoded.config.rounds, decoded.targets);
+				} else {
+					session.startTimed(game.countries, decoded.config.minutes, decoded.targets);
+				}
+				activeMode = decoded.config.mode;
+				return;
+			}
+			// Malformed/unsupported share link — fail gracefully into mode-select (FR-014).
+		}
+
+		if (countryCode && game.setRoundByCode(countryCode)) {
+			activeMode = 'freeplay';
+			return;
+		}
+		// No/invalid params: land on mode-select (activeMode stays null).
+	});
+
+	// Quickplay/Timed: once the active round resolves, briefly show the
+	// reveal, then auto-advance to the next round (or end the session).
+	$effect(() => {
+		if ((activeMode === 'quickplay' || activeMode === 'timed') && game.over && !session.over) {
+			const t = setTimeout(() => session.resolveRound(), 1200);
+			return () => clearTimeout(t);
+		}
+	});
+
+	function handleModeSelect(mode: GameMode, rounds?: QuickplayRounds, minutes?: TimedMinutes) {
+		if (mode === 'freeplay') {
+			activeMode = 'freeplay';
+			game.newRound();
+		} else if (mode === 'quickplay' && rounds !== undefined) {
+			session.startQuickplay(game.countries, rounds);
+			activeMode = 'quickplay';
+		} else if (mode === 'timed' && minutes !== undefined) {
+			session.startTimed(game.countries, minutes);
+			activeMode = 'timed';
+		}
+	}
+
+	function backToModeSelect() {
+		session.reset();
+		activeMode = null;
+		window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+	}
 
 	let alreadyGuessed = $derived(new Set(game.guesses.map((g) => g.country.cca3)));
 	let selected = $state<Country | null>(null);
@@ -25,6 +94,9 @@
 		<div class="header-bar">
 			<nav class="nav">
 				{#if route.current === 'game'}
+					{#if activeMode !== null}
+						<button type="button" class="link-btn" onclick={backToModeSelect}>← Change mode</button>
+					{/if}
 					<a href="#/all">All flags</a>
 					<a href="#/help">Help</a>
 					<a href="#/about">About</a>
@@ -72,7 +144,26 @@
 		{#if selected}
 			<CountryModal country={selected} onClose={() => (selected = null)} />
 		{/if}
+	{:else if activeMode === null}
+		<ModeSelect onSelect={handleModeSelect} />
+	{:else if (activeMode === 'quickplay' || activeMode === 'timed') && session.over}
+		<ResultsSummary
+			mode={activeMode}
+			config={session.config!}
+			targets={session.targets}
+			results={session.results}
+			onNewSession={backToModeSelect}
+		/>
 	{:else if game.target}
+		{#if activeMode === 'quickplay' || activeMode === 'timed'}
+			<SessionProgress
+				mode={activeMode}
+				roundIndex={session.roundIndex}
+				total={session.targets.length}
+				remainingMs={session.remainingMs}
+			/>
+		{/if}
+
 		<section class="chart-section">
 			<ColorChart colors={game.target.colors} />
 			{#if game.flashCountry && !game.over}
@@ -92,7 +183,9 @@
 				{:else}
 					<p class="lose">The answer was {game.target.name}.</p>
 				{/if}
-				<button class="primary" onclick={() => game.newRound()}>Play again</button>
+				{#if activeMode === 'freeplay'}
+					<button class="primary" onclick={() => game.newRound()}>Play again</button>
+				{/if}
 			</section>
 		{:else}
 			<section class="input-section">
