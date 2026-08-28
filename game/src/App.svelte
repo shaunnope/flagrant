@@ -96,8 +96,9 @@
 				{#if route.current === 'game'}
 					{#if activeMode !== null}
 						<button type="button" class="link-btn" onclick={backToModeSelect}>← Change mode</button>
+					{:else}
+						<a href="#/all">All flags</a>
 					{/if}
-					<a href="#/all">All flags</a>
 					<a href="#/help">Help</a>
 					<a href="#/about">About</a>
 				{:else}

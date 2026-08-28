@@ -52,8 +52,3 @@ export interface RoundOutcome {
 	result: RoundResult;
 	hintsRevealed: number;
 }
-
-/** Decoded/encoded shape of a session's mode + config + fixed target order, carried in a share link. */
-export type SharePayload =
-	| { m: 'quickplay'; rounds: QuickplayRounds; t: string[] }
-	| { m: 'timed'; minutes: TimedMinutes; t: string[] };

@@ -17,9 +17,8 @@
 	<h2>Game modes</h2>
 	<p>
 		<strong>Freeplay</strong> is unlimited, one round at a time. <strong>Quickplay</strong> plays a fixed number of
-		rounds (5, 10, 20, or every flag) back-to-back, then shows a results summary. <strong>Timed</strong> plays as
-		many rounds as you can before the clock runs out; a round still in progress when time expires counts as
-		unsolved.
+		rounds (5 or 10) back-to-back, then shows a results summary. <strong>Timed</strong> plays as many rounds as
+		you can before the clock runs out; a round still in progress when time expires counts as unsolved.
 	</p>
 
 	<h2>Sharing results</h2>
@@ -32,7 +31,7 @@
 	<h2>All flags</h2>
 	<p>
 		Browse every country's colour distribution and details on the <strong>All flags</strong> page, searchable by
-		name.
+		name — reachable from the mode-select screen before starting a round.
 	</p>
 </div>
 

@@ -46,7 +46,7 @@ class SessionState {
 		this.stopTimer();
 		this.countriesPool = countries;
 		const shuffled = order ?? shuffle(countries);
-		this.targets = rounds === 'all' ? shuffled : shuffled.slice(0, rounds);
+		this.targets = shuffled.slice(0, rounds);
 		this.mode = 'quickplay';
 		this.config = { mode: 'quickplay', rounds };
 		this.roundIndex = 0;

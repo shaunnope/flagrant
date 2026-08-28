@@ -39,16 +39,9 @@ describe('Quickplay round sequencing', () => {
 		expect(game.target?.cca3).toBe(session.targets[0].cca3);
 	});
 
-	it("'all' plays every country exactly once", () => {
-		session.startQuickplay(COUNTRIES, 'all');
-		expect(session.targets).toHaveLength(COUNTRIES.length);
-		expect(new Set(session.targets.map((c) => c.cca3))).toEqual(new Set(COUNTRIES.map((c) => c.cca3)));
-	});
-
 	it('advances one round per resolution and ends the session after the configured count', () => {
-		const THREE = COUNTRIES.slice(0, 3);
-		session.startQuickplay(THREE, 'all');
-		const [t0, t1, t2] = session.targets;
+		session.startQuickplay(COUNTRIES, 5);
+		const [t0, t1, t2, t3, t4] = session.targets;
 
 		// Round 1: correct guess, no hints -> solved-no-hints.
 		game.guess(t0);
@@ -65,14 +58,28 @@ describe('Quickplay round sequencing', () => {
 		expect(session.results[1]).toEqual({ target: t1, result: 'unsolved', hintsRevealed: 0 });
 		expect(game.target?.cca3).toBe(t2.cca3);
 
-		// Round 3: wrong guess (reveals a hint) then correct -> solved-with-hints; session ends.
+		// Round 3: wrong guess (reveals a hint) then correct -> solved-with-hints.
 		const wrong = COUNTRIES.find((c) => c.cca3 !== t2.cca3)!;
 		game.guess(wrong);
 		expect(game.hintsRevealed).toBe(1);
 		game.guess(t2);
 		session.resolveRound();
 		expect(session.results[2]).toEqual({ target: t2, result: 'solved-with-hints', hintsRevealed: 1 });
-		expect(session.roundIndex).toBe(3);
+		expect(session.over).toBe(false);
+		expect(game.target?.cca3).toBe(t3.cca3);
+
+		// Round 4: correct guess, no hints.
+		game.guess(t3);
+		session.resolveRound();
+		expect(session.roundIndex).toBe(4);
+		expect(session.over).toBe(false);
+		expect(game.target?.cca3).toBe(t4.cca3);
+
+		// Round 5 (last): give up -> unsolved; session ends.
+		game.giveUp();
+		session.resolveRound();
+		expect(session.results[4]).toEqual({ target: t4, result: 'unsolved', hintsRevealed: 0 });
+		expect(session.roundIndex).toBe(5);
 		expect(session.over).toBe(true);
 	});
 });

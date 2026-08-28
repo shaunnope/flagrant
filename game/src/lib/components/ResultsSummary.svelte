@@ -19,7 +19,11 @@
 
 	let copied = $state(false);
 	let showFallback = $state(false);
-	let shareUrl = $derived(buildShareUrl(mode, config, targets));
+	// Only the rounds actually played/resolved go into the share link — a
+	// Timed session's `targets` can be longer than what was played, since
+	// its internal queue is extended ahead of the clock running out.
+	let shareTargets = $derived(targets.slice(0, results.length));
+	let shareUrl = $derived(buildShareUrl(mode, config, shareTargets));
 	let emojiLine = $derived(summaryEmoji(results));
 	let shareText = $derived(`Convexity ${mode === 'quickplay' ? 'Quickplay' : 'Timed'}\n${emojiLine}\n${shareUrl}`);
 
