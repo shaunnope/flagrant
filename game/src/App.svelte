@@ -4,8 +4,10 @@
 	import { session } from './lib/session.svelte';
 	import { route } from './lib/route.svelte';
 	import { flagUrl } from './lib/types';
-	import type { Country, GameMode, QuickplayRounds, TimedMinutes } from './lib/types';
-	import { decodeSession } from './lib/share';
+	import type { Country, GameMode, QuickplayRounds, RoundOutcome, TimedMinutes } from './lib/types';
+	import { decodeModeUrl, decodeSession } from './lib/share';
+	import { readDailyAttempt, writeDailyAttempt } from './lib/dailyAttempt';
+	import { randomShuffleCountries, reconstructDailySequence, todayLocalISODate } from './lib/seed';
 	import { theme } from './lib/theme.svelte';
 	import ColorChart from './lib/components/ColorChart.svelte';
 	import SearchInput from './lib/components/SearchInput.svelte';
@@ -24,6 +26,8 @@
 	/** null = mode-selection screen is showing; no round/session active yet. */
 	let activeMode = $state<GameMode | null>(null);
 	let urlHandled = false;
+	/** Guards against writing the same daily attempt record more than once per session. */
+	let dailyRecordWritten = false;
 
 	// Once the dataset finishes loading, resolve the initial screen from the
 	// URL: a `?country=` link resumes Freeplay directly, a `?s=` link opens
@@ -50,6 +54,15 @@
 			// Malformed/unsupported share link — fail gracefully into mode-select (FR-014).
 		}
 
+		// Plain `?mode=`/`?rounds=`/`?minutes=` link (a 'daily'-origin share):
+		// no session data, just redirect straight into that mode — today's
+		// seed (or the weak gate, if already attempted today) takes it from there.
+		const modeLink = decodeModeUrl(params);
+		if (modeLink) {
+			enterMode(modeLink.mode, modeLink.rounds, modeLink.minutes);
+			return;
+		}
+
 		if (countryCode && game.setRoundByCode(countryCode)) {
 			activeMode = 'freeplay';
 			return;
@@ -66,22 +79,112 @@
 		}
 	});
 
+	// The first time a fresh, daily-seeded (non-pinned) session finishes,
+	// persist its outcome as today's Daily Attempt Record for that
+	// mode+configuration (FR-011) — powers the weak gate on revisit.
+	// 'pinned' (Play again / opened-link) runs never write this record, so
+	// the *first* attempt's record survives even if the player replays.
+	$effect(() => {
+		if (
+			(activeMode === 'quickplay' || activeMode === 'timed') &&
+			session.over &&
+			session.origin === 'daily' &&
+			session.config &&
+			!dailyRecordWritten
+		) {
+			dailyRecordWritten = true;
+			const selector = session.config.mode === 'quickplay' ? session.config.rounds : session.config.minutes;
+			writeDailyAttempt(session.config.mode, selector, session.results);
+		}
+	});
+
 	function handleModeSelect(mode: GameMode, rounds?: QuickplayRounds, minutes?: TimedMinutes) {
 		if (mode === 'freeplay') {
+			dailyRecordWritten = false;
 			activeMode = 'freeplay';
 			game.newRound();
-		} else if (mode === 'quickplay' && rounds !== undefined) {
+			return;
+		}
+		if (mode === 'quickplay' && rounds !== undefined) {
+			enterMode('quickplay', rounds, undefined);
+		} else if (mode === 'timed' && minutes !== undefined) {
+			enterMode('timed', undefined, minutes);
+		}
+	}
+
+	/**
+	 * Enters Quickplay/Timed for a given configuration — via mode-select or a
+	 * plain `?mode=` link (weak gate applies either way): shows today's
+	 * already-attempted result if one exists, otherwise starts a fresh,
+	 * daily-seeded session.
+	 */
+	function enterMode(mode: 'quickplay' | 'timed', rounds: QuickplayRounds | undefined, minutes: TimedMinutes | undefined) {
+		dailyRecordWritten = false;
+		if (mode === 'quickplay' && rounds !== undefined) {
+			if (startFromDailyAttemptIfPresent('quickplay', rounds)) {
+				activeMode = 'quickplay';
+				return;
+			}
 			session.startQuickplay(game.countries, rounds);
 			activeMode = 'quickplay';
 		} else if (mode === 'timed' && minutes !== undefined) {
+			if (startFromDailyAttemptIfPresent('timed', minutes)) {
+				activeMode = 'timed';
+				return;
+			}
 			session.startTimed(game.countries, minutes);
 			activeMode = 'timed';
+		}
+	}
+
+	/**
+	 * Weak gate (FR-012): if today's mode+configuration was already
+	 * attempted, rehydrate the session from that first attempt's record
+	 * instead of starting a new one. Returns true when it did so.
+	 */
+	function startFromDailyAttemptIfPresent(mode: 'quickplay' | 'timed', configSelector: QuickplayRounds | TimedMinutes): boolean {
+		const record = readDailyAttempt(mode, configSelector);
+		if (!record) return false;
+
+		const targets = reconstructDailySequence(todayLocalISODate(), mode, configSelector, game.countries, record.results.length).slice(
+			0,
+			record.results.length
+		);
+		const outcomes: RoundOutcome[] = record.results.map((r, i) => ({
+			target: targets[i],
+			result: r.result,
+			hintsRevealed: r.hintsRevealed
+		}));
+		const config = mode === 'quickplay' ? { mode: 'quickplay' as const, rounds: configSelector as QuickplayRounds } : { mode: 'timed' as const, minutes: configSelector as TimedMinutes };
+		session.hydrateFromRecord(config, targets, outcomes);
+		dailyRecordWritten = true; // already recorded — don't re-write on this revisit
+		return true;
+	}
+
+	/**
+	 * "Play again" (FR-013): starts a fresh, truly randomized (not
+	 * day-seeded, not a replay of the prior targets) session as a new
+	 * 'pinned'-origin session, rather than resetting to mode-select. Passing
+	 * an explicit `order` is what makes `session.origin` resolve to
+	 * 'pinned' (see session.svelte.ts) — this one-off random run can only be
+	 * reproduced by sharing its `?s=` link, since it isn't derivable from
+	 * today's seed.
+	 */
+	function playAgain() {
+		if (!session.config) return;
+		const shuffled = randomShuffleCountries(game.countries);
+		dailyRecordWritten = false;
+		if (session.config.mode === 'quickplay') {
+			session.startQuickplay(game.countries, session.config.rounds, shuffled.slice(0, session.config.rounds));
+		} else {
+			session.startTimed(game.countries, session.config.minutes, shuffled);
 		}
 	}
 
 	function backToModeSelect() {
 		session.reset();
 		activeMode = null;
+		dailyRecordWritten = false;
 		window.history.replaceState(null, '', window.location.pathname + window.location.hash);
 	}
 
@@ -95,7 +198,7 @@
 			<nav class="nav">
 				{#if route.current === 'game'}
 					{#if activeMode !== null}
-						<button type="button" class="link-btn" onclick={backToModeSelect}>← Change mode</button>
+						<button type="button" class="link-btn" onclick={backToModeSelect}>←</button>
 					{:else}
 						<a href="#/all">All flags</a>
 					{/if}
@@ -153,7 +256,8 @@
 			config={session.config!}
 			targets={session.targets}
 			results={session.results}
-			onNewSession={backToModeSelect}
+			origin={session.origin}
+			onNewSession={playAgain}
 		/>
 	{:else if game.target}
 		{#if activeMode === 'quickplay' || activeMode === 'timed'}

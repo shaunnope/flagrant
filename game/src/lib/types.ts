@@ -52,3 +52,29 @@ export interface RoundOutcome {
 	result: RoundResult;
 	hintsRevealed: number;
 }
+
+/**
+ * Where a session's target order came from:
+ * - 'daily': today's date+mode+config-seeded order (a fresh mode-select start).
+ * - 'pinned': an exact, previously-fixed sequence — either an opened `?s=`
+ *   link or a "Play again" replay. Not reshuffled, not seed-derived at start.
+ */
+export type SessionOrigin = 'daily' | 'pinned';
+
+/** One resolved round's outcome, compact enough to persist in a cookie (no full Country). */
+export interface DailyAttemptOutcome {
+	result: RoundResult;
+	hintsRevealed: number;
+}
+
+/**
+ * Device-local record of today's first attempt at a given mode+configuration,
+ * persisted as a cookie (one per mode+configuration). Powers the weak gate:
+ * revisiting an already-attempted mode+configuration today re-shows this
+ * instead of starting a new session.
+ */
+export interface DailyAttemptRecord {
+	/** ISO local date (YYYY-MM-DD) this record was written; a record whose `d` isn't today's date is stale/ignored. */
+	d: string;
+	results: DailyAttemptOutcome[];
+}

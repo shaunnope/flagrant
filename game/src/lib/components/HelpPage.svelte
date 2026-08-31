@@ -20,12 +20,21 @@
 		rounds (5 or 10) back-to-back, then shows a results summary. <strong>Timed</strong> plays as many rounds as
 		you can before the clock runs out; a round still in progress when time expires counts as unsolved.
 	</p>
+	<p>
+		Quickplay and Timed use the same flag order for everyone playing that mode and setting on a given day, so you
+		and a friend get a fair, identical challenge without needing to send each other anything. Once you've played
+		a setting today, coming back to it shows your result instead of starting over — you can still replay it, or
+		share it, from there.
+	</p>
 
 	<h2>Sharing results</h2>
 	<p>
 		After a Quickplay or Timed session, the results screen gives you an emoji summary (🟩 solved with no hints,
-		🟨 solved with hints, 🟥 unsolved) plus a link. Opening that link starts a fresh session with the exact same
-		mode, settings, and flag order — a fair challenge to send a friend.
+		🟨 solved with hints, 🟥 unsolved), the date you played, and a link. For your first attempt of the day, that
+		link just points a friend at the same mode and setting — they get the same flags automatically just by
+		playing today, no special key needed. <strong>Play again</strong> starts a brand-new, freshly randomized
+		challenge (not a replay of what you just played); its share text links straight to that random run, since
+		that's the only way anyone else can get the exact same one.
 	</p>
 
 	<h2>All flags</h2>

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { Country, RoundOutcome, SessionConfig } from '../types';
-	import { buildShareUrl, summaryEmoji } from '../share';
+	import type { Country, RoundOutcome, SessionConfig, SessionOrigin } from '../types';
+	import { buildModeUrl, buildShareUrl, solveDateText, summaryEmoji } from '../share';
 	import { flagUrl } from '../types';
 
 	let {
@@ -8,12 +8,14 @@
 		config,
 		targets,
 		results,
+		origin,
 		onNewSession
 	}: {
 		mode: 'quickplay' | 'timed';
 		config: SessionConfig;
 		targets: Country[];
 		results: RoundOutcome[];
+		origin: SessionOrigin;
 		onNewSession: () => void;
 	} = $props();
 
@@ -23,9 +25,15 @@
 	// Timed session's `targets` can be longer than what was played, since
 	// its internal queue is extended ahead of the clock running out.
 	let shareTargets = $derived(targets.slice(0, results.length));
-	let shareUrl = $derived(buildShareUrl(mode, config, shareTargets));
 	let emojiLine = $derived(summaryEmoji(results));
-	let shareText = $derived(`Convexity ${mode === 'quickplay' ? 'Quickplay' : 'Timed'}\n${emojiLine}\n${shareUrl}`);
+	let solveDate = $derived(solveDateText());
+	// A fresh, daily-seeded ('daily' origin) attempt links to the mode
+	// itself (no session/target data) — anyone opening it gets today's same
+	// flags for free just by landing in that mode. A 'pinned' (Play again /
+	// opened-link) run needs the full `?s=` link, since that's the only way
+	// to reproduce its exact (non-daily) sequence (FR-005a/005b).
+	let shareUrl = $derived(origin === 'pinned' ? buildShareUrl(mode, config, shareTargets) : buildModeUrl(mode, config));
+	let shareText = $derived(`Convexity ${mode === 'quickplay' ? 'Quickplay' : 'Timed'} — ${solveDate}\n${emojiLine}\n${shareUrl}`);
 
 	let solvedCount = $derived(results.filter((r) => r.result !== 'unsolved').length);
 
@@ -43,7 +51,6 @@
 </script>
 
 <section class="results">
-	<h2>Session complete</h2>
 	<p class="score">{solvedCount} / {results.length} solved</p>
 
 	<ol class="round-list">

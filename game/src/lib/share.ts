@@ -1,4 +1,4 @@
-import type { Country, RoundOutcome, SessionConfig, TimedMinutes } from './types';
+import type { Country, QuickplayRounds, RoundOutcome, SessionConfig, TimedMinutes } from './types';
 
 const TIMED_MINUTES: TimedMinutes[] = [1, 3, 5];
 
@@ -134,9 +134,58 @@ export function decodeSession(param: string, countries: Country[]): { config: Se
 	return { config, targets };
 }
 
+/** Query-string shape read back by App.svelte's `?mode=` handling — see buildModeUrl/decodeModeUrl. */
+export interface ModeLinkConfig {
+	mode: 'quickplay' | 'timed';
+	rounds?: QuickplayRounds;
+	minutes?: TimedMinutes;
+}
+
+/** Compact `?mode=` value per mode+configuration: q5/q10 (Quickplay), t1/t3/t5 (Timed). */
+const MODE_KEYS = { quickplay: { 5: 'q5', 10: 'q10' }, timed: { 1: 't1', 3: 't3', 5: 't5' } } as const;
+
+/**
+ * Builds a plain link to today's daily-seeded mode+configuration — no
+ * session/target data, just a compact `?mode=` key (`q5`/`q10`/`t1`/`t3`/`t5`)
+ * enough to redirect a visitor straight into that mode. Used for a
+ * 'daily'-origin share instead of a `?s=` pinned-session link, since the
+ * recipient gets the same flags automatically by playing that mode today.
+ */
+export function buildModeUrl(mode: 'quickplay' | 'timed', config: SessionConfig): string {
+	const key = mode === 'quickplay' ? MODE_KEYS.quickplay[(config as { rounds: QuickplayRounds }).rounds] : MODE_KEYS.timed[(config as { minutes: TimedMinutes }).minutes];
+	return `${window.location.origin}${window.location.pathname}?mode=${key}`;
+}
+
+const MODE_KEY_TO_CONFIG: Record<string, ModeLinkConfig> = {
+	q5: { mode: 'quickplay', rounds: 5 },
+	q10: { mode: 'quickplay', rounds: 10 },
+	t1: { mode: 'timed', minutes: 1 },
+	t3: { mode: 'timed', minutes: 3 },
+	t5: { mode: 'timed', minutes: 5 }
+};
+
+/**
+ * Parses a `?mode=` key (`q5`/`q10`/`t1`/`t3`/`t5`) into a validated
+ * mode+configuration, or null if missing/unrecognized — mirrors
+ * decodeSession's fail-gracefully contract for a malformed link.
+ */
+export function decodeModeUrl(params: URLSearchParams): ModeLinkConfig | null {
+	const key = params.get('mode');
+	if (!key) return null;
+	return MODE_KEY_TO_CONFIG[key] ?? null;
+}
+
 const RESULT_EMOJI = { 'solved-no-hints': '🟩', 'solved-with-hints': '🟨', unsolved: '🟥' } as const;
 
 /** One emoji per round, in order, for the share text (Wordle-style outcome grid). */
 export function summaryEmoji(results: RoundOutcome[]): string {
 	return results.map((r) => RESULT_EMOJI[r.result]).join('');
+}
+
+/** Today's local date, formatted for share text: ISO `YYYY-MM-DD` — unambiguous across locales/timezones for text that travels outside its sharer's own context. */
+export function solveDateText(date: Date = new Date()): string {
+	const y = date.getFullYear();
+	const m = String(date.getMonth() + 1).padStart(2, '0');
+	const d = String(date.getDate()).padStart(2, '0');
+	return `${y}-${m}-${d}`;
 }

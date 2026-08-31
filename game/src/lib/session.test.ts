@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Country } from './types';
 import { game } from './game.svelte';
 import { session } from './session.svelte';
+import * as seedModule from './seed';
 
 function country(cca3: string): Country {
 	return {
@@ -81,6 +82,83 @@ describe('Quickplay round sequencing', () => {
 		expect(session.results[4]).toEqual({ target: t4, result: 'unsolved', hintsRevealed: 0 });
 		expect(session.roundIndex).toBe(5);
 		expect(session.over).toBe(true);
+	});
+});
+
+describe('Daily seeding', () => {
+	it('produces the same target order for the same mode+config on repeated fresh starts', () => {
+		session.startQuickplay(COUNTRIES, 5);
+		const first = session.targets.map((c) => c.cca3);
+		session.reset();
+		session.startQuickplay(COUNTRIES, 5);
+		const second = session.targets.map((c) => c.cca3);
+
+		expect(first).toEqual(second);
+		expect(session.origin).toBe('daily');
+	});
+
+	it('tags a session with a pinned `order` as origin "pinned"', () => {
+		session.startQuickplay(COUNTRIES, 5, [COUNTRIES[2], COUNTRIES[0], COUNTRIES[1]]);
+		expect(session.origin).toBe('pinned');
+		expect(session.targets.map((c) => c.cca3)).toEqual(['CCC', 'AAA', 'BBB']);
+	});
+
+	it('reproduces a pinned sequence exactly regardless of the current date (Story 3 / SC-003)', () => {
+		const pinnedOrder = [COUNTRIES[3], COUNTRIES[1], COUNTRIES[4]];
+
+		const dateSpy = vi.spyOn(seedModule, 'todayLocalISODate').mockReturnValue('2026-08-31');
+		session.startQuickplay(COUNTRIES, 5, pinnedOrder);
+		const sameDayTargets = session.targets.map((c) => c.cca3);
+
+		session.reset();
+		dateSpy.mockReturnValue('2027-01-15'); // far-future date, simulating an opened link long after the fact
+		session.startQuickplay(COUNTRIES, 5, pinnedOrder);
+		const laterDayTargets = session.targets.map((c) => c.cca3);
+
+		dateSpy.mockRestore();
+
+		expect(sameDayTargets).toEqual(['DDD', 'BBB', 'EEE']);
+		expect(laterDayTargets).toEqual(sameDayTargets);
+	});
+
+	it('extends a Timed queue deterministically past its initial batch rather than falling back to true randomness', () => {
+		vi.useFakeTimers();
+		session.startTimed(COUNTRIES, 1);
+		const firstBatch = session.targets.map((c) => c.cca3);
+
+		// Exhaust the initial batch (5 countries) to force a queue extension.
+		for (let i = 0; i < firstBatch.length; i++) {
+			game.guess(session.targets[session.roundIndex]);
+			session.resolveRound();
+		}
+		expect(session.targets.length).toBeGreaterThan(firstBatch.length);
+		const extendedOnce = session.targets.map((c) => c.cca3);
+
+		// Re-run the same scenario from scratch and confirm the extension is identical (deterministic, not random).
+		session.reset();
+		session.startTimed(COUNTRIES, 1);
+		for (let i = 0; i < firstBatch.length; i++) {
+			game.guess(session.targets[session.roundIndex]);
+			session.resolveRound();
+		}
+		expect(session.targets.map((c) => c.cca3)).toEqual(extendedOnce);
+	});
+
+	it('keeps a fixed target order in place when the calendar date changes mid-session (FR-003)', () => {
+		const dateSpy = vi.spyOn(seedModule, 'todayLocalISODate').mockReturnValue('2026-08-31');
+		try {
+			session.startQuickplay(COUNTRIES, 5);
+			const targetsAtStart = session.targets.map((c) => c.cca3);
+
+			dateSpy.mockReturnValue('2026-09-01'); // simulate the day rolling over mid-session
+
+			game.guess(session.targets[0]);
+			session.resolveRound();
+
+			expect(session.targets.map((c) => c.cca3)).toEqual(targetsAtStart);
+		} finally {
+			dateSpy.mockRestore();
+		}
 	});
 });
 
