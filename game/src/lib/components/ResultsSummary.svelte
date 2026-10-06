@@ -1,39 +1,34 @@
 <script lang="ts">
-	import type { Country, RoundOutcome, SessionConfig, SessionOrigin } from '../types';
-	import { buildModeUrl, buildShareUrl, solveDateText, summaryEmoji } from '../share';
+	import type { RoundOutcome, SessionConfig } from '../types';
+	import { buildShareUrl, solveDateText, summaryEmoji } from '../share';
 	import { flagUrl } from '../types';
 	import { icon } from '../icons';
 
 	let {
 		mode,
 		config,
-		targets,
 		results,
-		origin,
+		seed,
+		datasetHash,
 		onNewSession
 	}: {
 		mode: 'quickplay' | 'timed';
 		config: SessionConfig;
-		targets: Country[];
 		results: RoundOutcome[];
-		origin: SessionOrigin;
+		/** The seed that regenerates this session's sequence; carried by the share link. */
+		seed: number;
+		/** Fingerprint of the current dataset, embedded in share links. */
+		datasetHash: string;
 		onNewSession: () => void;
 	} = $props();
 
 	let copied = $state(false);
 	let showFallback = $state(false);
-	// Only the rounds actually played/resolved go into the share link — a
-	// Timed session's `targets` can be longer than what was played, since
-	// its internal queue is extended ahead of the clock running out.
-	let shareTargets = $derived(targets.slice(0, results.length));
 	let emojiLine = $derived(summaryEmoji(results));
 	let solveDate = $derived(solveDateText());
-	// A fresh, daily-seeded ('daily' origin) attempt links to the mode
-	// itself (no session/target data) — anyone opening it gets today's same
-	// flags for free just by landing in that mode. A 'pinned' (Play again /
-	// opened-link) run needs the full `?s=` link, since that's the only way
-	// to reproduce its exact (non-daily) sequence (FR-005a/005b).
-	let shareUrl = $derived(origin === 'pinned' ? buildShareUrl(mode, config, shareTargets) : buildModeUrl(mode, config));
+	// Every share link carries the run's seed (daily or pinned), so the
+	// recipient plays the exact same flags regardless of date or timezone.
+	let shareUrl = $derived(buildShareUrl(config, seed, datasetHash));
 	let shareText = $derived(`Convexity ${mode === 'quickplay' ? 'Quickplay' : 'Timed'} — ${solveDate}\n${emojiLine}\n${shareUrl}`);
 
 	let solvedCount = $derived(results.filter((r) => r.result !== 'unsolved').length);

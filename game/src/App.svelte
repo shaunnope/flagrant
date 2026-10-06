@@ -5,9 +5,9 @@
 	import { route } from './lib/route.svelte';
 	import { flagUrl } from './lib/types';
 	import type { Country, GameMode, QuickplayRounds, RoundOutcome, TimedMinutes } from './lib/types';
-	import { decodeModeUrl, decodeSession } from './lib/share';
+	import { decodeShareUrl } from './lib/share';
 	import { readDailyAttempt, writeDailyAttempt } from './lib/dailyAttempt';
-	import { randomShuffleCountries, reconstructDailySequence, todayLocalISODate } from './lib/seed';
+	import { dailySeed, datasetHash, randomSeed, reconstructDailySequence, todayLocalISODate } from './lib/seed';
 	import { icon } from './lib/icons';
 	import { theme } from './lib/theme.svelte';
 	import ColorChart from './lib/components/ColorChart.svelte';
@@ -34,36 +34,30 @@
 	let dailyRecordWritten = false;
 
 	// Once the dataset finishes loading, resolve the initial screen from the
-	// URL: a `?country=` link resumes Freeplay directly, a `?s=` link opens
-	// the shared session it encodes, otherwise land on mode-select.
+	// URL: a `?country=` link resumes Freeplay directly, a `?g=` share code
+	// opens the run it encodes, otherwise land on mode-select.
 	$effect(() => {
 		if (urlHandled || game.loading || game.error) return;
 		urlHandled = true;
 
 		const params = new URLSearchParams(window.location.search);
 		const countryCode = params.get('country');
-		const shareParam = params.get('s');
 
-		if (shareParam) {
-			const decoded = decodeSession(shareParam, game.countries);
-			if (decoded) {
-				if (decoded.config.mode === 'quickplay') {
-					session.startQuickplay(game.countries, decoded.config.rounds, decoded.targets);
-				} else {
-					session.startTimed(game.countries, decoded.config.minutes, decoded.targets);
-				}
-				activeMode = decoded.config.mode;
-				return;
+		const share = decodeShareUrl(params);
+		// A dataset-hash mismatch means the seed would yield different flags, so
+		// fail into mode-select rather than silently play the wrong ones.
+		if (share && share.datasetHash === datasetHash(game.countries)) {
+			const { config, seed } = share;
+			const selector = config.mode === 'quickplay' ? config.rounds : config.minutes;
+			if (seed === dailySeed(todayLocalISODate(), config.mode, selector)) {
+				// It's today's daily run: treat it as such (weak gate + daily record).
+				enterMode(config.mode, config.mode === 'quickplay' ? config.rounds : undefined, config.mode === 'timed' ? config.minutes : undefined);
+			} else {
+				dailyRecordWritten = false;
+				if (config.mode === 'quickplay') session.startQuickplay(game.countries, config.rounds, seed);
+				else session.startTimed(game.countries, config.minutes, seed);
+				activeMode = config.mode;
 			}
-			// Malformed/unsupported share link — fail gracefully into mode-select (FR-014).
-		}
-
-		// Plain `?mode=`/`?rounds=`/`?minutes=` link (a 'daily'-origin share):
-		// no session data, just redirect straight into that mode — today's
-		// seed (or the weak gate, if already attempted today) takes it from there.
-		const modeLink = decodeModeUrl(params);
-		if (modeLink) {
-			enterMode(modeLink.mode, modeLink.rounds, modeLink.minutes);
 			return;
 		}
 
@@ -118,7 +112,7 @@
 
 	/**
 	 * Enters Quickplay/Timed for a given configuration — via mode-select or a
-	 * plain `?mode=` link (weak gate applies either way): shows today's
+	 * today's share link (weak gate applies either way): shows today's
 	 * already-attempted result if one exists, otherwise starts a fresh,
 	 * daily-seeded session.
 	 */
@@ -166,22 +160,21 @@
 	}
 
 	/**
-	 * "Play again" (FR-013): starts a fresh, truly randomized (not
-	 * day-seeded, not a replay of the prior targets) session as a new
-	 * 'pinned'-origin session, rather than resetting to mode-select. Passing
-	 * an explicit `order` is what makes `session.origin` resolve to
-	 * 'pinned' (see session.svelte.ts) — this one-off random run can only be
-	 * reproduced by sharing its `?s=` link, since it isn't derivable from
-	 * today's seed.
+	 * "Play again" (FR-013): starts a fresh session from a new random seed
+	 * (not day-seeded, not a replay of the prior targets) as a 'pinned'-origin
+	 * session, rather than resetting to mode-select. Passing an explicit
+	 * `seed` is what makes `session.origin` resolve to 'pinned' (see
+	 * session.svelte.ts) — this one-off run is reproduced by sharing its
+	 * `?g=` share link, since it isn't derivable from today's seed.
 	 */
 	function playAgain() {
 		if (!session.config) return;
-		const shuffled = randomShuffleCountries(game.countries);
+		const seed = randomSeed();
 		dailyRecordWritten = false;
 		if (session.config.mode === 'quickplay') {
-			session.startQuickplay(game.countries, session.config.rounds, shuffled.slice(0, session.config.rounds));
+			session.startQuickplay(game.countries, session.config.rounds, seed);
 		} else {
-			session.startTimed(game.countries, session.config.minutes, shuffled);
+			session.startTimed(game.countries, session.config.minutes, seed);
 		}
 	}
 
@@ -247,9 +240,9 @@
 		<ResultsSummary
 			mode={activeMode}
 			config={session.config!}
-			targets={session.targets}
 			results={session.results}
-			origin={session.origin}
+			seed={session.seed!}
+			datasetHash={datasetHash(game.countries)}
 			onNewSession={playAgain}
 		/>
 	{:else if game.target}

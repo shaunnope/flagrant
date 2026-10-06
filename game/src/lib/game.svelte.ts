@@ -29,7 +29,7 @@ class GameState {
 	/**
 	 * Loads the flag dataset only — does not start a round. Callers (App.svelte)
 	 * decide whether to land on mode-select, resume a `?country=` Freeplay link,
-	 * or open a `?s=` shared session, once loading finishes.
+	 * or open a `?g=` shared run, once loading finishes.
 	 */
 	async init() {
 		try {

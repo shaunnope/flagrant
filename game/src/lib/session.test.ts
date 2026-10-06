@@ -97,28 +97,37 @@ describe('Daily seeding', () => {
 		expect(session.origin).toBe('daily');
 	});
 
-	it('tags a session with a pinned `order` as origin "pinned"', () => {
-		session.startQuickplay(COUNTRIES, 5, [COUNTRIES[2], COUNTRIES[0], COUNTRIES[1]]);
+	it('tags a session with a `seed` as origin "pinned" and reproduces the same targets from that seed', () => {
+		session.startQuickplay(COUNTRIES, 5, 424242);
+		const first = session.targets.map((c) => c.cca3);
 		expect(session.origin).toBe('pinned');
-		expect(session.targets.map((c) => c.cca3)).toEqual(['CCC', 'AAA', 'BBB']);
+		expect(session.seed).toBe(424242);
+
+		session.reset();
+		expect(session.seed).toBeNull();
+		session.startQuickplay(COUNTRIES, 5, 424242);
+		expect(session.targets.map((c) => c.cca3)).toEqual(first);
 	});
 
-	it('reproduces a pinned sequence exactly regardless of the current date (Story 3 / SC-003)', () => {
-		const pinnedOrder = [COUNTRIES[3], COUNTRIES[1], COUNTRIES[4]];
-
+	it('reproduces a seed-pinned sequence exactly regardless of the current date (Story 3 / SC-003)', () => {
 		const dateSpy = vi.spyOn(seedModule, 'todayLocalISODate').mockReturnValue('2026-08-31');
-		session.startQuickplay(COUNTRIES, 5, pinnedOrder);
+		session.startQuickplay(COUNTRIES, 5, 99);
 		const sameDayTargets = session.targets.map((c) => c.cca3);
 
 		session.reset();
 		dateSpy.mockReturnValue('2027-01-15'); // far-future date, simulating an opened link long after the fact
-		session.startQuickplay(COUNTRIES, 5, pinnedOrder);
+		session.startQuickplay(COUNTRIES, 5, 99);
 		const laterDayTargets = session.targets.map((c) => c.cca3);
 
 		dateSpy.mockRestore();
 
-		expect(sameDayTargets).toEqual(['DDD', 'BBB', 'EEE']);
 		expect(laterDayTargets).toEqual(sameDayTargets);
+	});
+
+	it("exposes a daily session's seed so it can be shared", () => {
+		session.startQuickplay(COUNTRIES, 5);
+		expect(session.origin).toBe('daily');
+		expect(session.seed).toBe(seedModule.dailySeed(seedModule.todayLocalISODate(), 'quickplay', 5));
 	});
 
 	it('extends a Timed queue deterministically past its initial batch rather than falling back to true randomness', () => {

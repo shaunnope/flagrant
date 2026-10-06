@@ -105,6 +105,10 @@ fn main() -> Result<()> {
         }
     }
 
+    // Sorted by cca3 once, here, so the game can rely on a stable dataset
+    // order: its seeded shuffles (and share-link dataset hash) depend on it.
+    entries.sort_by(|a, b| a.cca3.cmp(&b.cca3));
+
     let min_path = write_json_pair(&out_path, &entries)?;
 
     println!(

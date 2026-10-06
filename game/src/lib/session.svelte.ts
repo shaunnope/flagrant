@@ -1,6 +1,6 @@
 import type { Country, QuickplayRounds, RoundOutcome, RoundResult, SessionConfig, SessionOrigin, TimedMinutes } from './types';
 import { game } from './game.svelte';
-import { seededShuffleCountries, todayLocalISODate } from './seed';
+import { dailySeed, shuffleBySeed, todayLocalISODate } from './seed';
 
 const TICK_MS = 1000;
 
@@ -18,8 +18,10 @@ class SessionState {
 	results = $state<RoundOutcome[]>([]);
 	/** Timed only; null for quickplay/no session. */
 	remainingMs = $state<number | null>(null);
-	/** 'daily' = today's seeded order (fresh mode-select start); 'pinned' = an exact fixed sequence (opened link, "Play again", or a rehydrated weak-gate result). */
+	/** 'daily' = today's seeded order (fresh mode-select start); 'pinned' = an exact seed-fixed sequence (opened share link or "Play again"). */
 	origin = $state<SessionOrigin>('daily');
+	/** The seed that regenerates this session's exact sequence (today's daily seed, or a pinned one); what share links carry. Null when no session is active. */
+	seed = $state<number | null>(null);
 
 	private countriesPool: Country[] = [];
 	private timerId: ReturnType<typeof setInterval> | undefined;
@@ -38,36 +40,37 @@ class SessionState {
 
 	active = $derived(this.mode !== null && !this.over);
 
-	/** Starts a Quickplay session over today's date+config-seeded order (or, with a pinned `order`, that exact sequence — used when opening a shared link or "Play again"). */
-	startQuickplay(countries: Country[], rounds: QuickplayRounds, order?: Country[]) {
+	/** Starts a Quickplay session over today's date+config-seeded order — or, with a `seed`, that seed's order (a share link or "Play again"). */
+	startQuickplay(countries: Country[], rounds: QuickplayRounds, seed?: number) {
 		this.stopTimer();
 		this.countriesPool = countries;
 		this.seedDate = todayLocalISODate();
 		this.extensionCount = 0;
-		const ordered = order ?? seededShuffleCountries(this.seedDate, 'quickplay', rounds, countries);
-		this.targets = ordered.slice(0, rounds);
+		this.seed = seed ?? dailySeed(this.seedDate, 'quickplay', rounds);
+		this.targets = shuffleBySeed(this.seed!, countries).slice(0, rounds);
 		this.mode = 'quickplay';
 		this.config = { mode: 'quickplay', rounds };
 		this.roundIndex = 0;
 		this.results = [];
 		this.remainingMs = null;
-		this.origin = order ? 'pinned' : 'daily';
+		this.origin = seed !== undefined ? 'pinned' : 'daily';
 		if (this.targets.length > 0) game.setRoundByCode(this.targets[0].cca3);
 	}
 
-	/** Starts a Timed session; `order`, if given (from a shared link or "Play again"), pins the initial target queue but the session still runs on the clock, not a fixed count. Without `order`, the queue starts from today's date+config-seeded order. */
-	startTimed(countries: Country[], minutes: TimedMinutes, order?: Country[]) {
+	/** Starts a Timed session; a `seed` fixes the target queue but the session still runs on the clock, not a fixed count. Without one, the queue starts from today's date+config-seeded order. */
+	startTimed(countries: Country[], minutes: TimedMinutes, seed?: number) {
 		this.stopTimer();
 		this.countriesPool = countries;
 		this.seedDate = todayLocalISODate();
 		this.extensionCount = 0;
-		this.targets = order ?? seededShuffleCountries(this.seedDate, 'timed', minutes, countries);
+		this.seed = seed ?? dailySeed(this.seedDate, 'timed', minutes);
+		this.targets = shuffleBySeed(this.seed!, countries);
 		this.mode = 'timed';
 		this.config = { mode: 'timed', minutes };
 		this.roundIndex = 0;
 		this.results = [];
 		this.remainingMs = minutes * 60_000;
-		this.origin = order ? 'pinned' : 'daily';
+		this.origin = seed !== undefined ? 'pinned' : 'daily';
 		if (this.targets.length > 0) game.setRoundByCode(this.targets[0].cca3);
 		this.timerId = setInterval(() => this.tick(), TICK_MS);
 	}
@@ -91,6 +94,7 @@ class SessionState {
 		this.roundIndex = targets.length;
 		this.remainingMs = null;
 		this.origin = 'daily';
+		this.seed = dailySeed(this.seedDate, config.mode, config.mode === 'quickplay' ? config.rounds : config.minutes);
 	}
 
 	private tick() {
@@ -124,8 +128,7 @@ class SessionState {
 			// with another deterministic, seed-derived batch (FR-004) rather than
 			// falling back to true randomness.
 			this.extensionCount += 1;
-			const minutes = (this.config as { mode: 'timed'; minutes: TimedMinutes }).minutes;
-			this.targets = [...this.targets, ...seededShuffleCountries(this.seedDate, 'timed', minutes, this.countriesPool, this.extensionCount)];
+			this.targets = [...this.targets, ...shuffleBySeed(this.seed!, this.countriesPool, this.extensionCount)];
 		}
 		game.setRoundByCode(this.targets[this.roundIndex].cca3);
 	}
@@ -144,6 +147,7 @@ class SessionState {
 		this.results = [];
 		this.remainingMs = null;
 		this.origin = 'daily';
+		this.seed = null;
 	}
 }
 

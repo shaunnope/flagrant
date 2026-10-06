@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Country } from './types';
-import { randomShuffleCountries, seededShuffleCountries, seedKey, todayLocalISODate } from './seed';
+import { dailySeed, datasetHash, parseSeedCode, randomSeed, seededShuffleCountries, seedKey, seedToCode, shuffleBySeed, todayLocalISODate } from './seed';
 
 function country(cca3: string): Country {
 	return {
@@ -83,34 +83,59 @@ describe('seededShuffleCountries', () => {
 	});
 });
 
-describe('randomShuffleCountries', () => {
-	it('produces a permutation of the input pool without mutating it', () => {
-		const before = COUNTRIES.map((c) => c.cca3);
-		const shuffled = randomShuffleCountries(COUNTRIES);
-
-		expect(shuffled).toHaveLength(COUNTRIES.length);
-		expect(new Set(shuffled.map((c) => c.cca3))).toEqual(new Set(before));
-		expect(COUNTRIES.map((c) => c.cca3)).toEqual(before);
+describe('shuffleBySeed', () => {
+	it('is deterministic for a seed and a permutation of the pool', () => {
+		const a = shuffleBySeed(12345, COUNTRIES).map((c) => c.cca3);
+		expect(a).toEqual(shuffleBySeed(12345, COUNTRIES).map((c) => c.cca3));
+		expect(new Set(a)).toEqual(new Set(COUNTRIES.map((c) => c.cca3)));
 	});
 
-	it('is not pinned to any deterministic seed — repeated calls vary (statistically) unlike seededShuffleCountries', () => {
-		const runs = new Set<string>();
-		for (let i = 0; i < 20; i++) {
-			runs.add(randomShuffleCountries(COUNTRIES).map((c) => c.cca3).join(','));
-		}
-		expect(runs.size).toBeGreaterThan(1);
+	it('differs between seeds and between variants of one seed', () => {
+		const base = shuffleBySeed(1, COUNTRIES).map((c) => c.cca3);
+		expect(shuffleBySeed(2, COUNTRIES).map((c) => c.cca3)).not.toEqual(base);
+		expect(shuffleBySeed(1, COUNTRIES, 1).map((c) => c.cca3)).not.toEqual(base);
 	});
 });
 
-describe('seedKey', () => {
-	it('produces a distinct key per (date, mode, config, variant) combination', () => {
-		const keys = new Set([
-			seedKey('2026-08-31', 'quickplay', 5),
-			seedKey('2026-09-01', 'quickplay', 5),
-			seedKey('2026-08-31', 'timed', 5),
-			seedKey('2026-08-31', 'quickplay', 10),
-			seedKey('2026-08-31', 'quickplay', 5, 1)
-		]);
-		expect(keys.size).toBe(5);
+describe('randomSeed / seedToCode / parseSeedCode', () => {
+	it('round-trips a seed through its fixed-width code', () => {
+		for (const seed of [0, 1, 35, 123456789, 4294967295, randomSeed()]) {
+			const code = seedToCode(seed);
+			expect(code).toHaveLength(7);
+			expect(parseSeedCode(code)).toBe(seed);
+		}
+	});
+
+	it('rejects malformed seed codes', () => {
+		expect(parseSeedCode('')).toBeNull();
+		expect(parseSeedCode('BBBB')).toBeNull(); // wrong width
+		expect(parseSeedCode('AEIOU01')).toBeNull(); // outside the alphabet
+		expect(parseSeedCode('9999999')).toBeNull(); // > 2^32 - 1
+	});
+
+	it('varies between calls (statistically)', () => {
+		const seeds = new Set(Array.from({ length: 20 }, () => randomSeed()));
+		expect(seeds.size).toBeGreaterThan(1);
+	});
+});
+
+describe('datasetHash', () => {
+	it('is a stable 4-char code that changes when the pool changes', () => {
+		expect(datasetHash(COUNTRIES)).toHaveLength(4);
+		expect(datasetHash(COUNTRIES)).toBe(datasetHash([...COUNTRIES]));
+		expect(datasetHash(COUNTRIES.slice(1))).not.toBe(datasetHash(COUNTRIES));
+	});
+});
+
+describe('seedKey / dailySeed', () => {
+	it('produces a distinct key and seed per (date, mode, config) combination', () => {
+		const args: [string, 'quickplay' | 'timed', number][] = [
+			['2026-08-31', 'quickplay', 5],
+			['2026-09-01', 'quickplay', 5],
+			['2026-08-31', 'timed', 5],
+			['2026-08-31', 'quickplay', 10]
+		];
+		expect(new Set(args.map((a) => seedKey(...a))).size).toBe(4);
+		expect(new Set(args.map((a) => dailySeed(...a))).size).toBe(4);
 	});
 });

@@ -40,19 +40,80 @@ function seededShuffle<T>(arr: T[], random: () => number): T[] {
 	return out;
 }
 
-/**
- * The composite key a day's seed is derived from: local date + mode +
- * configuration selector (Quickplay round count, or Timed minutes), plus an
- * optional variant (used to extend a Timed queue past its initial seeded
- * batch with more deterministic-but-distinct shuffles of the same pool).
- * Two different configs on the same day hash to different seeds, and the
- * same config on different days hashes to a different seed.
- */
-export function seedKey(date: string, mode: 'quickplay' | 'timed', configSelector: number, variant = 0): string {
-	return `${date}|${mode}|${configSelector}|${variant}`;
+/** The composite key a day's seed is derived from: local date + mode + configuration selector (Quickplay round count, or Timed minutes). */
+export function seedKey(date: string, mode: 'quickplay' | 'timed', configSelector: number): string {
+	return `${date}|${mode}|${configSelector}`;
 }
 
-/** Deterministically shuffles `countries` for a given (date, mode, config[, variant]) — same inputs always produce the same order, on any client. */
+/** A day's seed for a mode+configuration: two different configs on the same day, or the same config on different days, get different seeds. */
+export function dailySeed(date: string, mode: 'quickplay' | 'timed', configSelector: number): number {
+	return hashString(seedKey(date, mode, configSelector));
+}
+
+/** A fresh random 32-bit seed, for a one-off ("Play again") run that's shareable by seed. */
+export function randomSeed(): number {
+	return Math.floor(Math.random() * 4294967296) >>> 0;
+}
+
+/** No vowels and no 0/O/1/I, so a code can't spell a word or be misread. */
+const CODE_ALPHABET = 'BCDFGHJKLMNPQRSTVWXYZ23456789';
+const SEED_CODE_LENGTH = 7; // 29^7 > 2^32
+const HASH_CODE_LENGTH = 4;
+
+function toCode(n: number, length: number): string {
+	let out = '';
+	for (let i = 0; i < length; i++) {
+		out = CODE_ALPHABET[n % CODE_ALPHABET.length] + out;
+		n = Math.floor(n / CODE_ALPHABET.length);
+	}
+	return out;
+}
+
+function fromCode(code: string): number | null {
+	let n = 0;
+	for (const ch of code) {
+		const d = CODE_ALPHABET.indexOf(ch);
+		if (d < 0) return null;
+		n = n * CODE_ALPHABET.length + d;
+	}
+	return n;
+}
+
+/** Fixed-width, readable text form of a seed for share links. */
+export function seedToCode(seed: number): string {
+	return toCode(seed >>> 0, SEED_CODE_LENGTH);
+}
+
+/** Parses a `seedToCode` value back to a seed, or null if it isn't one. */
+export function parseSeedCode(code: string): number | null {
+	if (code.length !== SEED_CODE_LENGTH) return null;
+	const n = fromCode(code);
+	return n !== null && n < 4294967296 ? n : null;
+}
+
+/**
+ * Short fingerprint of the country pool (hash of its cca3 codes, in dataset
+ * order — the dataset is sorted by cca3 at generation time). A seed only
+ * reproduces a sequence against the same pool, so share links carry this to
+ * let a recipient detect a dataset mismatch instead of silently getting
+ * different flags.
+ */
+export function datasetHash(countries: Country[]): string {
+	return toCode(hashString(countries.map((c) => c.cca3).join(',')) % CODE_ALPHABET.length ** HASH_CODE_LENGTH, HASH_CODE_LENGTH);
+}
+
+/**
+ * Deterministically shuffles `countries` for a seed — same seed + same pool
+ * always gives the same order, on any client. The pool must be in the
+ * dataset's canonical (cca3-sorted) order. `variant` > 0 yields further
+ * distinct shuffles of the same seed, used to extend a Timed queue.
+ */
+export function shuffleBySeed(seed: number, countries: Country[], variant = 0): Country[] {
+	const effective = variant === 0 ? seed : hashString(`${seed}|${variant}`);
+	return seededShuffle(countries, mulberry32(effective));
+}
+
+/** Deterministically shuffles `countries` for a given (date, mode, config[, variant]) — the daily seed's shuffle. */
 export function seededShuffleCountries(
 	date: string,
 	mode: 'quickplay' | 'timed',
@@ -60,19 +121,7 @@ export function seededShuffleCountries(
 	countries: Country[],
 	variant = 0
 ): Country[] {
-	const seed = hashString(seedKey(date, mode, configSelector, variant));
-	return seededShuffle(countries, mulberry32(seed));
-}
-
-/**
- * True (non-deterministic) shuffle via `Math.random()` — the original,
- * pre-seeding randomization. Used only for "Play again": each replay is
- * meant to be a fresh, one-off challenge, not the same targets replayed nor
- * tied to today's seed, so its result can only be reproduced by sending the
- * `?s=` pinned-session link (never derivable from a `?mode=` link).
- */
-export function randomShuffleCountries(countries: Country[]): Country[] {
-	return seededShuffle(countries, Math.random);
+	return shuffleBySeed(dailySeed(date, mode, configSelector), countries, variant);
 }
 
 /**

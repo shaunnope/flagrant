@@ -52,6 +52,12 @@ The dataset is generated in two steps, both Rust binaries in the
 `dataset-gen` crate. `dataset/flags.json` is committed, so you only need to
 re-run these if you want to refresh the source data.
 
+The generated dataset is sorted by `cca3` code. The game relies on that
+order: a share link's seed (`?g=<mode>-<seed>-<dataset hash>`) only reproduces
+the same flags against the same ordered list, and the dataset hash in the link
+detects a mismatch. Adding, removing or reordering flags therefore invalidates
+older share links.
+
 ### 1. Fetch country metadata
 
 Pulls population, area, region/continent, capital, and border data from the

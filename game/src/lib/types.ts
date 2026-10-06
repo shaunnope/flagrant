@@ -56,8 +56,8 @@ export interface RoundOutcome {
 /**
  * Where a session's target order came from:
  * - 'daily': today's date+mode+config-seeded order (a fresh mode-select start).
- * - 'pinned': an exact, previously-fixed sequence — either an opened `?s=`
- *   link or a "Play again" replay. Not reshuffled, not seed-derived at start.
+ * - 'pinned': a seed fixed by an opened share link or a "Play again" replay,
+ *   not derived from today's date.
  */
 export type SessionOrigin = 'daily' | 'pinned';
 
