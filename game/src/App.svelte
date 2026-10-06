@@ -9,6 +9,7 @@
 	import { readDailyAttempt, writeDailyAttempt } from './lib/dailyAttempt';
 	import { randomShuffleCountries, reconstructDailySequence, todayLocalISODate } from './lib/seed';
 	import { icon } from './lib/icons';
+	import { theme } from './lib/theme.svelte';
 	import ColorChart from './lib/components/ColorChart.svelte';
 	import SearchInput from './lib/components/SearchInput.svelte';
 	import GuessList from './lib/components/GuessList.svelte';
@@ -216,13 +217,13 @@
 					<a href="#/about">About</a>
 				{:else}
 					<button type="button" class="back" onclick={() => route.go('game')}>{@html icon('back')}Game</button>
-					{#if route.current !== 'all'}<a href="#/all">All flags</a>{/if}
+					{#if route.current !== 'all' && route.current !== 'help'}<a href="#/all">All flags</a>{/if}
 					{#if route.current !== 'help'}<a href="#/help">Help</a>{/if}
 					{#if route.current !== 'about'}<a href="#/about">About</a>{/if}
 				{/if}
 			</nav>
 			<button class="icon-btn" type="button" title="Theme" aria-label="Theme" onclick={() => (themeOpen = true)}>
-				{@html icon('palette')}
+				{@html icon(theme.preference === 'system' ? 'system' : theme.preference === 'dark' ? 'moon' : 'sun')}
 			</button>
 		</div>
 	</header>
