@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { GameMode, QuickplayRounds, TimedMinutes } from '../types';
+	import { icon } from '../icons';
 
 	let { onSelect }: { onSelect: (mode: GameMode, rounds?: QuickplayRounds, minutes?: TimedMinutes) => void } =
 		$props();
@@ -9,33 +10,33 @@
 </script>
 
 <div class="mode-select">
-	<section class="mode-card">
-		<h2>Quickplay</h2>
+	<section class="mode-card glass">
+		<h2>{@html icon('rounds')}Quickplay</h2>
 		<p>Play a fixed number of rounds back-to-back, then see your results.</p>
 		<div class="options">
 			{#each ROUND_OPTIONS as n (n)}
-				<button type="button" onclick={() => onSelect('quickplay', n)}>
+				<button type="button" class="btn btn-quiet" onclick={() => onSelect('quickplay', n)}>
 					{n} rounds
 				</button>
 			{/each}
 		</div>
 	</section>
 
-	<section class="mode-card">
-		<h2>Timed</h2>
+	<section class="mode-card glass">
+		<h2>{@html icon('timer')}Timed</h2>
 		<p>Answer as many rounds as you can before the clock runs out.</p>
 		<div class="options">
 			{#each MINUTE_OPTIONS as m (m)}
-				<button type="button" onclick={() => onSelect('timed', undefined, m)}>{m} min</button>
+				<button type="button" class="btn btn-quiet" onclick={() => onSelect('timed', undefined, m)}>{m} min</button>
 			{/each}
 		</div>
 	</section>
 
-	<section class="mode-card">
-		<h2>Freeplay</h2>
+	<section class="mode-card glass">
+		<h2>{@html icon('shuffle')}Freeplay</h2>
 		<p>Unlimited rounds, one at a time, at your own pace.</p>
 		<div class="options">
-			<button type="button" class="primary" onclick={() => onSelect('freeplay')}>Play</button>
+			<button type="button" class="btn btn-primary" onclick={() => onSelect('freeplay')}>Play</button>
 		</div>
 	</section>
 </div>
@@ -44,47 +45,35 @@
 	.mode-select {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: 12px;
 	}
 	.mode-card {
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
-		padding: 1rem;
-		border-radius: 0.6rem;
-		border: 1px solid var(--border);
-		background: var(--surface);
+		gap: 8px;
+		padding: 16px;
+		border-radius: var(--radius-card);
 	}
 	h2 {
-		margin: 0;
-		font-size: 1.1rem;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 18px;
+		line-height: 24px;
+		color: var(--brand-ink);
+	}
+	h2 :global(svg) {
+		width: 20px;
+		height: 20px;
 	}
 	p {
-		margin: 0;
-		opacity: 0.75;
-		font-size: 0.9rem;
+		font-size: 14px;
+		line-height: 20px;
+		color: var(--muted);
 	}
 	.options {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.5rem;
-	}
-	button {
-		padding: 0.5rem 1rem;
-		border-radius: 0.5rem;
-		border: 1px solid var(--border);
-		background: transparent;
-		color: inherit;
-		cursor: pointer;
-		font-size: 0.9rem;
-	}
-	button:hover {
-		background: var(--accent-muted);
-		border-color: var(--accent);
-	}
-	button.primary {
-		background: var(--accent);
-		border-color: var(--accent);
-		color: var(--accent-contrast);
+		gap: 8px;
 	}
 </style>

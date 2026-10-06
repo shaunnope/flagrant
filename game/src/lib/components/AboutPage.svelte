@@ -1,4 +1,4 @@
-<div class="page">
+<div class="prose glass">
 	<h2>About Convexity</h2>
 	<p>
 		Convexity is a game about guessing flags from their colour distribution — no shapes, no icons, just
@@ -21,24 +21,16 @@
 </div>
 
 <style>
-	.page {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		max-width: 34rem;
+	.prose {
+		max-width: none;
 	}
-	h2 {
-		margin: 0.75rem 0 0.25rem;
-		font-size: 1.1rem;
+	.prose h2 {
+		margin-top: 8px;
 	}
-	h2:first-child {
+	.prose h2:first-child {
 		margin-top: 0;
 	}
-	p {
-		margin: 0;
-		line-height: 1.5;
-	}
-	a {
-		color: var(--accent);
+	.prose p {
+		line-height: 21px;
 	}
 </style>

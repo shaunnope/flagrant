@@ -3,6 +3,7 @@
 	import { scaleLog } from 'd3-scale';
 	import type { FlagColor } from '../types';
 	import { hexToHsl } from '../similarity';
+	import { icon } from '../icons';
 
 	let { colors }: { colors: FlagColor[] } = $props();
 
@@ -44,8 +45,8 @@
 
 <div class="color-chart">
 	<div class="toggle" role="group" aria-label="Chart format">
-		<button class:active={mode === 'pie'} onclick={() => (mode = 'pie')}>Pie</button>
-		<button class:active={mode === 'bar'} onclick={() => (mode = 'bar')}>Bar</button>
+		<button class:active={mode === 'pie'} aria-pressed={mode === 'pie'} onclick={() => (mode = 'pie')}>{@html icon('pie')}Pie</button>
+		<button class:active={mode === 'bar'} aria-pressed={mode === 'bar'} onclick={() => (mode = 'bar')}>{@html icon('bar')}Bar</button>
 	</div>
 
 	<div class="chart-area">
@@ -82,7 +83,7 @@
 	{#if mode === 'pie' && pieMinor.length > 0}
 		<div class="minor-grid" aria-label="Colours under 1%">
 			{#each pieMinor as d (d.hex)}
-				<div class="minor-swatch" title="{d.hex} — {d.pct}%">
+				<div class="minor-swatch" title="{d.hex}, {d.pct}%">
 					<span class="swatch" style:background={d.hex}></span>
 					<span class="swatch-label">{d.pct}%</span>
 				</div>
@@ -95,86 +96,102 @@
 	.color-chart {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 12px;
 		width: 100%;
 	}
 	.toggle {
-		display: flex;
-		gap: 0.5rem;
+		display: inline-grid;
+		grid-auto-flow: column;
+		grid-auto-columns: 1fr;
+		gap: 6px;
+		padding: 4px;
 		align-self: center;
+		border-radius: var(--radius-control);
+		background: var(--surface);
+		border: 1px solid var(--surface-border);
 	}
 	.toggle button {
-		padding: 0.3rem 0.9rem;
-		border-radius: 999px;
-		border: 1px solid var(--border);
-		background: transparent;
-		color: inherit;
-		cursor: pointer;
-		font-size: 0.85rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		padding: 7px 14px;
+		border-radius: var(--radius-seg);
+		font-size: 13.5px;
+		line-height: 18px;
+		color: var(--muted-strong);
+		transition: background var(--duration-quick) ease, color var(--duration-quick) ease;
+	}
+	.toggle button :global(svg) {
+		width: 16px;
+		height: 16px;
 	}
 	.toggle button.active {
-		background: var(--accent);
-		border-color: var(--accent);
-		color: var(--accent-contrast);
+		background: var(--brand-fill);
+		color: var(--on-brand);
 	}
 	.chart-area {
 		width: 100%;
 		height: 320px;
+	}
+	@media (max-width: 480px) {
+		.chart-area {
+			height: 260px;
+		}
 	}
 	.pie-ring-wrap {
 		position: relative;
 		width: 100%;
 		height: 100%;
 	}
+	/* Seam between wedges, and the rim round the pie, so a white or black
+	   flag colour keeps its shape on the page. */
+	.pie-ring-wrap :global(path) {
+		stroke: var(--chart-seam);
+		stroke-width: 2px;
+		stroke-linejoin: round;
+	}
 	.pie-ring {
 		position: absolute;
 		inset: 0;
 		margin: auto;
-		height: 102%;
+		height: 100%;
 		width: auto;
 		aspect-ratio: 1;
 		border-radius: 50%;
-		/* Inverse of --fg/--bg so the ring reads as a light border in dark
-		   mode and a dark border in light mode. */
-		border: 5px solid var(--fg);
-		opacity: 0.35;
+		border: 1.5px solid var(--chart-rim);
 		pointer-events: none;
 	}
-	.bar-options {
-		display: flex;
-		justify-content: flex-end;
-		font-size: 0.8rem;
-		opacity: 0.8;
-	}
-	.bar-options label {
-		display: flex;
-		align-items: center;
-		gap: 0.3rem;
-		cursor: pointer;
+	.chart-area :global(.lc-bar),
+	.chart-area :global(rect) {
+		stroke: var(--chart-seam);
+		stroke-width: 2px;
 	}
 	.minor-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
-		gap: 0.4rem;
-		padding: 0.5rem;
-		border: 1px solid var(--border);
-		border-radius: 0.5rem;
-		background: var(--surface);
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 6px;
 	}
 	.minor-swatch {
-		display: flex;
+		display: inline-flex;
 		align-items: center;
-		gap: 0.3rem;
-		font-size: 0.75rem;
+		gap: 6px;
+		padding: 4px 10px 4px 5px;
+		border-radius: var(--radius-pill);
+		background: var(--surface-strong);
+		border: 1px solid var(--surface-border);
+		font-size: 12.5px;
+		line-height: 16px;
+		font-weight: 600;
+		color: var(--muted-strong);
+		font-variant-numeric: tabular-nums;
 	}
 	.swatch {
-		width: 0.85rem;
-		height: 0.85rem;
-		border-radius: 0.2rem;
-		border: 1px solid var(--border);
+		width: 14px;
+		height: 14px;
+		border-radius: 50%;
+		box-shadow: inset 0 0 0 1px var(--chart-rim);
 		flex-shrink: 0;
-	}
-	.swatch-label {
-		opacity: 0.75;
 	}
 </style>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Country, HintKind } from '../types';
+	import { icon } from '../icons';
 
 	let {
 		target,
@@ -21,19 +22,22 @@
 	<div class="hints">
 		{#each revealed as hint (hint)}
 			<div class="hint">
+				{@html icon(hint === 'neighbors' ? 'neighbours' : hint === 'size' ? 'area' : hint)}
+				<span>
 				{#if hint === 'neighbors'}
-					<strong>Neighbors:</strong>
+					<span class="k">Neighbours</span>
 					{target.borders.length > 0 ? target.borders.map(neighborName).join(', ') : 'none (island / isolated)'}
 				{:else if hint === 'population'}
-					<strong>Population:</strong>
+					<span class="k">Population</span>
 					{fmtPopulation(target.population)}
 				{:else if hint === 'size'}
-					<strong>Size:</strong>
+					<span class="k">Area</span>
 					{fmtArea(target.area_km2)}
 				{:else if hint === 'continent'}
-					<strong>Continent:</strong>
+					<span class="k">Continent</span>
 					{target.continents.join(', ') || target.region}
 				{/if}
+				</span>
 			</div>
 		{/each}
 	</div>
@@ -43,14 +47,38 @@
 	.hints {
 		display: flex;
 		flex-direction: column;
-		gap: 0.4rem;
+		gap: 6px;
 		width: 100%;
 	}
 	.hint {
-		padding: 0.5rem 0.75rem;
-		border-radius: 0.5rem;
-		background: var(--surface);
-		border: 1px solid var(--border);
-		font-size: 0.9rem;
+		display: grid;
+		grid-template-columns: 22px 1fr;
+		align-items: center;
+		gap: 10px;
+		padding: 9px 12px;
+		border-radius: var(--radius-control);
+		background: var(--surface-strong);
+		border: 1px solid var(--surface-border);
+		font-size: 15px;
+		line-height: 21px;
+		animation: hint-in var(--duration-open) var(--ease-out);
+	}
+	.hint :global(svg) {
+		width: 18px;
+		height: 18px;
+		color: var(--brand-ink);
+	}
+	.k {
+		font-size: 12.5px;
+		line-height: 16px;
+		font-weight: 600;
+		color: var(--muted-strong);
+		margin-right: 6px;
+	}
+	@keyframes hint-in {
+		from {
+			opacity: 0;
+			transform: translateY(6px);
+		}
 	}
 </style>
