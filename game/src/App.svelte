@@ -311,7 +311,6 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		flex-wrap: wrap;
 		gap: 10px;
 		padding: 10px 12px 10px 16px;
 	}
@@ -319,6 +318,18 @@
 		display: flex;
 		align-items: center;
 		gap: 10px;
+		min-width: 0;
+	}
+	/* Narrowing screens shed the tagline first, then the title; the logo always stays. */
+	@media (max-width: 680px) {
+		.tagline {
+			display: none;
+		}
+	}
+	@media (max-width: 500px) {
+		h1 {
+			display: none;
+		}
 	}
 	.logo {
 		flex-shrink: 0;
@@ -337,6 +348,7 @@
 		display: flex;
 		align-items: center;
 		gap: 4px;
+		flex-shrink: 0;
 	}
 	.nav {
 		display: flex;
@@ -355,6 +367,7 @@
 		font-weight: 600;
 		color: var(--brand-ink);
 		text-decoration: none;
+		white-space: nowrap;
 		transition: background var(--duration-quick) ease;
 	}
 	.back :global(svg) {
