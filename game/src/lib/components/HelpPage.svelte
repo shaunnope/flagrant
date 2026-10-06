@@ -1,4 +1,4 @@
-<div class="page">
+<div class="prose glass">
 	<h2>How to play</h2>
 	<ol>
 		<li>Every round picks a random country. You see only its flag's colour distribution — a pie or bar chart of the colours and how much of the flag they cover.</li>
@@ -29,8 +29,8 @@
 
 	<h2>Sharing results</h2>
 	<p>
-		After a Quickplay or Timed session, the results screen gives you an emoji summary (🟩 solved with no hints,
-		🟨 solved with hints, 🟥 unsolved), the date you played, and a link. For your first attempt of the day, that
+		After a Quickplay or Timed session, the results screen gives you an emoji summary (green solved with no hints,
+		amber solved with hints, red unsolved), the date you played, and a link. For your first attempt of the day, that
 		link just points a friend at the same mode and setting — they get the same flags automatically just by
 		playing today, no special key needed. <strong>Play again</strong> starts a brand-new, freshly randomized
 		challenge (not a replay of what you just played); its share text links straight to that random run, since
@@ -45,28 +45,16 @@
 </div>
 
 <style>
-	.page {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-		max-width: 34rem;
+	.prose {
+		max-width: none;
 	}
-	h2 {
-		margin: 0.75rem 0 0.25rem;
-		font-size: 1.1rem;
+	.prose h2 {
+		margin-top: 8px;
 	}
-	h2:first-child {
+	.prose h2:first-child {
 		margin-top: 0;
 	}
-	p,
-	ol {
-		margin: 0;
-		line-height: 1.5;
-	}
-	ol {
-		padding-left: 1.25rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
+	.prose p {
+		line-height: 21px;
 	}
 </style>

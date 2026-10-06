@@ -2,6 +2,7 @@
 	import type { Country, RoundOutcome, SessionConfig, SessionOrigin } from '../types';
 	import { buildModeUrl, buildShareUrl, solveDateText, summaryEmoji } from '../share';
 	import { flagUrl } from '../types';
+	import { icon } from '../icons';
 
 	let {
 		mode,
@@ -50,7 +51,7 @@
 	}
 </script>
 
-<section class="results">
+<section class="results glass">
 	<p class="score">{solvedCount} / {results.length} solved</p>
 
 	<ol class="round-list">
@@ -58,19 +59,23 @@
 			<li class:unsolved={r.result === 'unsolved'}>
 				<img class="flag" src={flagUrl(r.target.cca2, 40)} alt={r.target.name} />
 				<span class="name">{r.target.name}</span>
-				<span class="outcome">
-					{#if r.result === 'solved-no-hints'}🟩 no hints
-					{:else if r.result === 'solved-with-hints'}🟨 {r.hintsRevealed} hint{r.hintsRevealed === 1 ? '' : 's'}
-					{:else}🟥 unsolved{/if}
+				<span class="outcome" class:hinted={r.result === 'solved-with-hints'}>
+					{#if r.result === 'solved-no-hints'}{@html icon('check')}No hints
+					{:else if r.result === 'solved-with-hints'}{@html icon('check')}{r.hintsRevealed} hint{r.hintsRevealed === 1 ? '' : 's'}
+					{:else}{@html icon('cross')}Unsolved{/if}
 				</span>
 			</li>
 		{/each}
 	</ol>
 
 	<div class="share">
-		<p class="emoji-line">{emojiLine}</p>
+		<div class="share-grid" role="img" aria-label="Round results">
+			{#each results as r, i (i)}
+				<i class:hinted={r.result === 'solved-with-hints'} class:unsolved={r.result === 'unsolved'}></i>
+			{/each}
+		</div>
 		<div class="share-actions">
-			<button type="button" class="primary" onclick={copyShare}>{copied ? 'Copied!' : 'Copy results'}</button>
+			<button type="button" class="btn btn-primary" onclick={copyShare}>{@html icon(copied ? 'check' : 'copy')}{copied ? 'Copied' : 'Copy results'}</button>
 		</div>
 		{#if showFallback}
 			<textarea readonly value={shareText} onclick={(e) => (e.currentTarget as HTMLTextAreaElement).select()}
@@ -78,7 +83,7 @@
 		{/if}
 	</div>
 
-	<button type="button" class="secondary" onclick={onNewSession}>Play again</button>
+	<button type="button" class="btn btn-quiet" onclick={onNewSession}>{@html icon('shuffle')}Play again</button>
 </section>
 
 <style>
@@ -86,38 +91,41 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 0.75rem;
+		gap: 12px;
 		width: 100%;
-	}
-	h2 {
-		margin: 0;
+		padding: 18px;
 	}
 	.score {
-		margin: 0;
-		opacity: 0.8;
+		font-size: 24px;
+		line-height: 30px;
+		font-weight: 700;
+		color: var(--brand-ink);
 	}
 	.round-list {
 		list-style: none;
-		margin: 0;
-		padding: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.4rem;
+		gap: 6px;
 		width: 100%;
 		max-width: 26rem;
 	}
 	li {
 		display: grid;
-		grid-template-columns: 1.6rem 1fr auto;
+		grid-template-columns: 24px 1fr auto;
 		align-items: center;
-		gap: 0.6rem;
-		font-size: 0.9rem;
+		gap: 10px;
+		padding: 7px 10px;
+		border-radius: var(--radius-control);
+		background: var(--surface-strong);
+		border: 1px solid var(--surface-border);
+		font-size: 14px;
+		line-height: 20px;
 	}
 	.flag {
-		width: 1.6rem;
+		width: 24px;
 		height: auto;
-		border-radius: 0.15rem;
-		border: 1px solid var(--border);
+		border-radius: var(--radius-flag);
+		box-shadow: 0 0 0 1px var(--chart-rim);
 	}
 	.name {
 		white-space: nowrap;
@@ -125,56 +133,62 @@
 		text-overflow: ellipsis;
 	}
 	.outcome {
-		font-size: 0.85rem;
-		opacity: 0.85;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12.5px;
+		line-height: 16px;
+		font-weight: 600;
+		color: var(--ok);
 	}
-	li.unsolved .name {
-		opacity: 0.7;
+	.outcome :global(svg) {
+		width: 14px;
+		height: 14px;
+	}
+	.outcome.hinted {
+		color: var(--warn);
+	}
+	li.unsolved .outcome {
+		color: var(--error);
 	}
 	.share {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 10px;
 		width: 100%;
 		max-width: 26rem;
-		padding: 0.75rem;
-		border-radius: 0.5rem;
-		background: var(--surface);
-		border: 1px solid var(--border);
+		padding: 18px;
+		border-radius: var(--radius-card);
+		background: var(--surface-strong);
+		border: 1px solid var(--surface-border);
 	}
-	.emoji-line {
-		margin: 0;
-		font-size: 1.2rem;
-		letter-spacing: 0.1rem;
-		word-break: break-all;
+	.share-grid {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 4px;
+	}
+	.share-grid i {
+		width: 18px;
+		height: 18px;
+		border-radius: 5px;
+		background: var(--ok);
+	}
+	.share-grid i.hinted {
+		background: var(--warn);
+	}
+	.share-grid i.unsolved {
+		background: var(--error);
 	}
 	textarea {
 		width: 100%;
 		min-height: 4rem;
-		font-family: inherit;
-		font-size: 0.8rem;
-		color: inherit;
-		background: var(--bg);
-		border: 1px solid var(--border);
-		border-radius: 0.35rem;
-		padding: 0.5rem;
-	}
-	button.primary,
-	button.secondary {
-		padding: 0.6rem 1.4rem;
-		border-radius: 0.5rem;
-		border: 1px solid var(--border);
-		cursor: pointer;
-		font-size: 0.95rem;
-	}
-	button.primary {
-		background: var(--accent);
-		border-color: var(--accent);
-		color: var(--accent-contrast);
-	}
-	button.secondary {
-		background: transparent;
-		color: inherit;
+		font-size: 14px;
+		color: var(--ink);
+		background: var(--surface-strong);
+		border: 1px solid var(--edge);
+		border-radius: var(--radius-btn);
+		padding: 8px 10px;
 	}
 </style>

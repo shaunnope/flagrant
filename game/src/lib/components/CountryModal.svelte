@@ -2,6 +2,7 @@
 	import type { Country } from '../types';
 	import { flagUrl } from '../types';
 	import ColorChart from './ColorChart.svelte';
+	import { icon } from '../icons';
 
 	let { country, onClose }: { country: Country; onClose: () => void } = $props();
 
@@ -19,14 +20,12 @@
 <svelte:window onkeydown={onKeydown} />
 
 <div
-	class="overlay"
-	role="button"
-	tabindex="-1"
+	class="modal-backdrop"
+	role="presentation"
 	onclick={onClose}
-	onkeydown={(e) => e.key === 'Enter' && onClose()}
 >
 	<div
-		class="modal"
+		class="modal glass"
 		role="dialog"
 		aria-modal="true"
 		aria-label={country.name}
@@ -34,7 +33,7 @@
 		onclick={(e) => e.stopPropagation()}
 		onkeydown={(e) => e.stopPropagation()}
 	>
-		<button class="close" aria-label="Close" onclick={onClose}>✕</button>
+		<button class="icon-btn small close" type="button" aria-label="Close" onclick={onClose}>{@html icon('close')}</button>
 
 		<div class="header">
 			<img class="flag" src={flagUrl(country.cca2)} alt={country.name} />
@@ -64,77 +63,51 @@
 </div>
 
 <style>
-	.overlay {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.5);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 1.25rem;
-		z-index: 100;
-	}
 	.modal {
 		position: relative;
-		width: 100%;
 		max-width: 32rem;
-		max-height: 90vh;
-		overflow-y: auto;
-		background: var(--bg);
-		border: 1px solid var(--border);
-		border-radius: 0.75rem;
-		padding: 1.5rem;
-		box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: 14px;
 	}
 	.close {
 		position: absolute;
-		top: 0.75rem;
-		right: 0.75rem;
-		width: 2rem;
-		height: 2rem;
-		border-radius: 999px;
-		border: 1px solid var(--border);
-		background: transparent;
-		color: inherit;
-		cursor: pointer;
-	}
-	.close:hover {
-		background: var(--accent-muted);
-		border-color: var(--accent);
+		top: 12px;
+		right: 12px;
 	}
 	.header {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
+		gap: 14px;
+		padding-right: 40px;
 	}
 	.flag {
-		width: 4.5rem;
+		width: 72px;
 		height: auto;
-		border-radius: 0.35rem;
-		border: 1px solid var(--border);
+		border-radius: var(--radius-flag);
+		box-shadow: var(--shadow-flag), 0 0 0 1px var(--chart-rim);
 		flex-shrink: 0;
 	}
 	h2 {
-		margin: 0;
+		font-size: 18px;
+		line-height: 24px;
+		color: var(--brand-ink);
 	}
 	.subregion {
-		margin: 0.15rem 0 0;
-		opacity: 0.7;
-		font-size: 0.9rem;
+		font-size: 14px;
+		line-height: 20px;
+		color: var(--muted-strong);
 	}
 	.details {
 		display: grid;
 		grid-template-columns: max-content 1fr;
-		gap: 0.3rem 0.75rem;
-		margin: 0;
-		font-size: 0.9rem;
+		gap: 4px 12px;
+		font-size: 14px;
+		line-height: 20px;
 	}
 	dt {
 		font-weight: 600;
-		opacity: 0.8;
+		color: var(--muted-strong);
 	}
 	dd {
 		margin: 0;

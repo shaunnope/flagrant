@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Country } from '../types';
+	import { icon } from '../icons';
 
 	let {
 		countries,
@@ -51,9 +52,10 @@
 </script>
 
 <div class="search">
+	{@html icon('search')}
 	<input
 		type="text"
-		placeholder="Guess a country..."
+		placeholder="Search for a country"
 		{disabled}
 		bind:value={query}
 		oninput={() => {
@@ -87,55 +89,82 @@
 	.search {
 		position: relative;
 		width: 100%;
-		max-width: 28rem;
+		max-width: 460px;
+	}
+	.search > :global(svg) {
+		position: absolute;
+		left: 13px;
+		top: 13px;
+		width: 18px;
+		height: 18px;
+		color: var(--muted-strong);
+		pointer-events: none;
 	}
 	input {
 		width: 100%;
-		padding: 0.6rem 0.9rem;
-		border-radius: 0.5rem;
-		border: 1px solid var(--border);
-		background: var(--surface);
-		color: inherit;
-		font-size: 1rem;
+		padding: 10px 14px 10px 40px;
+		border-radius: var(--radius-btn);
+		border: 1px solid var(--edge);
+		background: var(--surface-strong);
+		color: var(--ink);
+		font-size: 16px;
+		line-height: 22px;
+	}
+	input::placeholder {
+		color: var(--muted-strong);
+		opacity: 1;
 	}
 	.dropdown {
 		position: absolute;
-		top: calc(100% + 0.25rem);
+		top: calc(100% + 6px);
 		left: 0;
 		right: 0;
 		z-index: 10;
 		list-style: none;
-		margin: 0;
-		padding: 0.25rem;
-		border-radius: 0.5rem;
-		border: 1px solid var(--border);
-		background: var(--surface);
-		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+		padding: 4px;
+		border-radius: var(--radius-control);
+		border: 1px solid var(--surface-border);
+		background: var(--surface-strong);
+		-webkit-backdrop-filter: blur(18px);
+		backdrop-filter: blur(18px);
+		box-shadow: var(--shadow-glass);
 		max-height: 16rem;
 		overflow-y: auto;
+		animation: drop var(--duration-open) var(--ease-out);
+	}
+	@keyframes drop {
+		from {
+			opacity: 0;
+			transform: translateY(-4px);
+		}
 	}
 	.dropdown button {
 		display: flex;
 		justify-content: space-between;
+		align-items: center;
 		width: 100%;
 		text-align: left;
-		padding: 0.5rem 0.6rem;
-		border: none;
-		background: transparent;
-		color: inherit;
-		border-radius: 0.35rem;
-		cursor: pointer;
-		font-size: 0.95rem;
+		padding: 8px 10px;
+		border-radius: var(--radius-seg);
+		font-size: 16px;
+		line-height: 22px;
+		font-weight: 400;
 	}
 	.dropdown button.highlighted,
 	.dropdown button:hover {
-		background: var(--accent-muted);
+		background: var(--brand-fill);
+		color: var(--on-brand);
 	}
 	.dropdown button.guessed {
-		opacity: 0.55;
+		color: var(--muted-strong);
+	}
+	.dropdown button.highlighted.guessed,
+	.dropdown button.guessed:hover {
+		color: var(--on-brand);
 	}
 	.tag {
-		font-size: 0.7rem;
-		opacity: 0.7;
+		font-size: 12.5px;
+		line-height: 16px;
+		font-weight: 600;
 	}
 </style>
