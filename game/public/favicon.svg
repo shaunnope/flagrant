@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-	<!-- Convexity favicon: pie chart of flag colours, brand-purple ring — mirrors the in-game ColorChart. -->
-	<circle cx="16" cy="16" r="15.25" fill="none" stroke="#863bff" stroke-width="1.5" opacity="0.55"/>
-	<path fill="#e63946" d="M16,16 L16,1 A15,15 0 0 1 28.135,24.817 Z"/>
-	<path fill="#f2b705" d="M16,16 L28.135,24.817 A15,15 0 0 1 7.183,28.135 Z"/>
-	<path fill="#2f9e44" d="M16,16 L7.183,28.135 A15,15 0 0 1 1.733,11.365 Z"/>
-	<path fill="#3b7dd8" d="M16,16 L1.733,11.365 A15,15 0 0 1 16,1 Z"/>
+	<!-- Convexity mark: pie of flag colours, paper seams between wedges, cobalt rim. Colours are fixed and never theme. -->
+	<circle cx="16" cy="16" r="15.25" fill="#f6f4ee" stroke="#3149c4" stroke-width="1.5"/>
+	<path fill="#e63946" stroke="#f6f4ee" stroke-width="1.5" stroke-linejoin="round" d="M16,16 L16.0,2.5 A13.5,13.5 0 0 1 26.922,23.935 Z"/>
+	<path fill="#f2b705" stroke="#f6f4ee" stroke-width="1.5" stroke-linejoin="round" d="M16,16 L26.922,23.935 A13.5,13.5 0 0 1 8.065,26.922 Z"/>
+	<path fill="#2f9e44" stroke="#f6f4ee" stroke-width="1.5" stroke-linejoin="round" d="M16,16 L8.065,26.922 A13.5,13.5 0 0 1 3.161,20.172 Z"/>
+	<path fill="#3b7dd8" stroke="#f6f4ee" stroke-width="1.5" stroke-linejoin="round" d="M16,16 L3.161,20.172 A13.5,13.5 0 0 1 16.0,2.5 Z"/>
 </svg>
