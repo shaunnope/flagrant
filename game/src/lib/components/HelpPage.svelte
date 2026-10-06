@@ -29,8 +29,8 @@
 
 	<h2>Sharing results</h2>
 	<p>
-		After a Quickplay or Timed session, the results screen gives you an emoji summary (green solved with no hints,
-		amber solved with hints, red unsolved), the date you played, and a link. For your first attempt of the day, that
+		After a Quickplay or Timed session, the results screen gives you an emoji summary (green 🟩 solved with no hints,
+		amber 🟨 solved with hints, red 🟥 unsolved), the date you played, and a link. For your first attempt of the day, that
 		link just points a friend at the same mode and setting — they get the same flags automatically just by
 		playing today, no special key needed. <strong>Play again</strong> starts a brand-new, freshly randomized
 		challenge (not a replay of what you just played); its share text links straight to that random run, since
